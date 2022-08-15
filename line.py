@@ -3,23 +3,23 @@ import numpy as np
 
 class Section1:
     def __init__(self):
-        self.start_station = '''JiTouQiao'''
-        self.end_station = '''BaiFuoQiao'''
-        self.length = 1470
-        self.delta_distance = 49
+        self.start_station = '''JiTouQiao'''  # 出发站
+        self.end_station = '''BaiFuoQiao'''  # 到达站
+        self.length = 1470  # 站间长度
+        self.delta_distance = 49  # 位置离散
         # self.max_iteration = self.length / self.delta_distance
-        self.scheduled_time = 86
-        self.speed_limit = {
+        self.scheduled_time = 86  # 计划运行时间
+        self.speed_limit = {  # 线路限速
             0: 80, 240: 120, 1025: 80, 1470: 0
         }
-        self.gradient = {
+        self.gradient = {  # 坡度
             0: 0, 209: -22, 459: -5, 709: 5.47, 959: 26, 1234: 0
         }
-        self.curve = {0: 0, 850: 2500, 1065: 0, 1107: 1500, 1303: 0}
-        self.direction = "ShangXing"
-        self.tra_power = 51.56
-        self.re_power = 25.76
-        self.ac_power = 25.80
+        self.curve = {0: 0, 850: 2500, 1065: 0, 1107: 1500, 1303: 0}  # 曲率
+        self.direction = "ShangXing"  # 运行方向
+        self.tra_power = 51.56  # 牵引能耗
+        self.re_power = 25.76  # 再生制动产生能量
+        self.ac_power = 25.80  # 实际能耗
 
 
 class Section2:

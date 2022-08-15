@@ -21,12 +21,14 @@ class Train:
         self.max_brake_force = 0
 
     def get_max_traction_force(self, cur_v):  # 速度单位为km/h，用当前速度
+        self.get_n1(cur_v)
         if cur_v <= 57:
             self.max_traction_force = 409
         else:
             self.max_traction_force = 0.02893 * cur_v * cur_v - 8.417 * cur_v + 785.8
 
     def get_max_brake_force(self, cur_v):  # 速度单位为km/h
+        self.get_n1_b(cur_v)
         if cur_v <= 6:
             self.max_brake_force = 63.29 * cur_v
         elif 6 < cur_v <= 100:
@@ -53,4 +55,4 @@ class Train:
         return self.max_traction_force * (action / 100) * (ave_v / 3.6) * (delta_t / 3600) / (self.n1 * self.n2 * self.n3 * self.n4)
 
     def get_re_power(self, ave_v, delta_t, action):  # 速度单位为km/h，时间单位为s，action为算法输出的百分比
-        return self.max_brake_force * (action / 100) * (ave_v / 3.6) * (delta_t / 3600) * (self.n1 * self.n2 * self.n3 * self.n4)
+        return self.max_brake_force * (action / 100) * (ave_v / 3.6) * (delta_t / 3600) * (self.n1_b * self.n2 * self.n3 * self.n4)
