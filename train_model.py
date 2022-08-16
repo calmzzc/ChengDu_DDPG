@@ -45,7 +45,7 @@ class Train:
 
     # 计算制动电机效率
     def get_n1_b(self, cur_v):  # 速度单位为km/h
-        if cur_v <= 60:
+        if 0 < cur_v <= 60:
             self.n1_b = -0.09175 * np.exp(17 / cur_v) + 1.048
         else:
             self.n1_b = 0.94

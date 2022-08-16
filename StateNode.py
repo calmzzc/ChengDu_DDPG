@@ -104,12 +104,12 @@ class StateNode:
         del key_list
 
     def get_current_tra_acc(self):  # 计算当前牵引加速度
-        self.train_model.get_max_traction_force(self.state[1])  # 当前车辆的最大牵引力
+        self.train_model.get_max_traction_force(self.state[1] * 3.6)  # 当前车辆的最大牵引力
         tra_force = self.train_model.max_traction_force * self.action  # 当前输出的牵引力
         self.tm_acc = tra_force / self.train_model.weight
 
     def get_current_b_acc(self):  # 计算当前制动加速度
-        self.train_model.get_max_brake_force(self.state[1])
+        self.train_model.get_max_brake_force(self.state[1] * 3.6)
         bra_force = self.train_model.max_brake_force * abs(self.action)  # 单位是kN
         self.bm_acc = - bra_force / self.train_model.weight
 
@@ -133,11 +133,11 @@ class StateNode:
 
     def get_t_power(self):
         delta_t = self.next_state[0] - self.state[0]
-        self.t_power = self.train_model.get_traction_power(self.ave_v, delta_t, self.action)
+        self.t_power = self.train_model.get_traction_power(self.ave_v * 3.6, delta_t, self.action)
 
     def get_re_power(self):
         delta_t = self.next_state[0] - self.state[0]
-        self.re_power = self.train_model.get_re_power(self.ave_v, delta_t, self.action)
+        self.re_power = self.train_model.get_re_power(self.ave_v * 3.6, delta_t, self.action)
 
     def get_power(self):
         self.get_ave_v()
@@ -158,7 +158,7 @@ class StateNode:
             if key_list[j] <= self.step * self.line.delta_distance < key_list[j + 1]:
                 key = key_list[j]
         limit_speed = self.line.speed_limit[key]
-        if self.state[1] >= limit_speed:  # 超速
+        if self.state[1] * 3.6 >= limit_speed:  # 超速
             self.speed_punish = 1
             self.current_limit_speed = limit_speed
         else:
