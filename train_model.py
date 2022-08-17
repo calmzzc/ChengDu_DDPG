@@ -47,12 +47,14 @@ class Train:
     def get_n1_b(self, cur_v):  # 速度单位为km/h
         if 0 < cur_v <= 60:
             self.n1_b = -0.09175 * np.exp(17 / cur_v) + 1.048
+            if self.n1_b < 0:
+                self.n1_b = 0
         else:
             self.n1_b = 0.94
 
     # 计算牵引能耗和再生制动能耗
     def get_traction_power(self, ave_v, delta_t, action):  # 速度单位为km/h，用平均速度，时间单位为s，action为算法输出的百分比
-        return self.max_traction_force * (action / 100) * (ave_v / 3.6) * (delta_t / 3600) / (self.n1 * self.n2 * self.n3 * self.n4)
+        return self.max_traction_force * (action / 1) * (ave_v / 3.6) * (delta_t / 3600) / (self.n1 * self.n2 * self.n3 * self.n4)
 
     def get_re_power(self, ave_v, delta_t, action):  # 速度单位为km/h，时间单位为s，action为算法输出的百分比
-        return self.max_brake_force * (action / 100) * (ave_v / 3.6) * (delta_t / 3600) * (self.n1_b * self.n2 * self.n3 * self.n4)
+        return self.max_brake_force * (action / 1) * (ave_v / 3.6) * (delta_t / 3600) * (self.n1_b * self.n2 * self.n3 * self.n4)

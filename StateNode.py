@@ -104,16 +104,18 @@ class StateNode:
         del key_list
 
     def get_current_tra_acc(self):  # 计算当前牵引加速度
-        self.train_model.get_max_traction_force(self.state[1] * 3.6)  # 当前车辆的最大牵引力
+        # self.train_model.get_max_traction_force(self.state[1] * 3.6)  # 当前车辆的最大牵引力
         tra_force = self.train_model.max_traction_force * self.action  # 当前输出的牵引力
         self.tm_acc = tra_force / self.train_model.weight
 
     def get_current_b_acc(self):  # 计算当前制动加速度
-        self.train_model.get_max_brake_force(self.state[1] * 3.6)
+        # self.train_model.get_max_brake_force(self.state[1] * 3.6)
         bra_force = self.train_model.max_brake_force * abs(self.action)  # 单位是kN
         self.bm_acc = - bra_force / self.train_model.weight
 
     def get_m_acc(self):  # 判断当前是制动还是牵引
+        self.train_model.get_max_traction_force(self.state[1] * 3.6)  # 当前车辆的最大牵引力
+        self.train_model.get_max_brake_force(self.state[1] * 3.6)
         if self.action < 0:
             self.tm_acc = 0
             self.get_current_b_acc()
@@ -141,7 +143,7 @@ class StateNode:
 
     def get_power(self):
         self.get_ave_v()
-        if self.action <= 0:
+        if self.action < 0:
             self.t_power = 0
             self.get_re_power()
         else:
