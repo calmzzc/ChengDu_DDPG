@@ -29,7 +29,7 @@ class DDPGConfig:
                            '/' + curr_time + '/results/'  # 保存结果的路径
         self.model_path = curr_path + "/outputs/" + self.env + \
                           '/' + curr_time + '/models/'  # 保存模型的路径
-        self.train_eps = 1000  # 训练的回合数
+        self.train_eps = 300  # 训练的回合数
         self.max_step = 500  # 每回合最多步数
         self.eval_eps = 30  # 测试的回合数
         self.gamma = 0.99  # 折扣因子
@@ -267,7 +267,7 @@ def eval(cfg, line, agent, train_model):
 if __name__ == "__main__":
     cfg = DDPGConfig()
     line, agent, train_model = env_agent_config(cfg, seed=1)
-    t_rewards, t_ma_rewards, v_list, t_list, a_list, ep_list, power_list, ma_power_list, unsafe_c, ma_unsafe_c, total_acc_list, total_t_power_list, total_re_power_list = train(cfg, line, agent, train_model)
+    t_rewards, t_ma_rewards, v_list, t_list, a_list, ep_list, power_list, ma_power_list, unsafe_c, ma_unsafe_c, acc_list, total_t_power_list, total_re_power_list = train(cfg, line, agent, train_model)
     make_dir(cfg.result_path, cfg.model_path)
     agent.save(path=cfg.model_path)
     save_results(t_rewards, t_ma_rewards, tag='train', path=cfg.result_path)
@@ -285,10 +285,10 @@ if __name__ == "__main__":
 
     plot_rewards_cn(rewards, ma_rewards, tag="eval", env=cfg.env, algo=cfg.algo, path=cfg.result_path)  # 测试奖励
 
-    plot_speed(v_list, t_list, a_list, tag="op_train", env=cfg.env, algo=cfg.algo, path=cfg.result_path)
-    evalplot_speed(ev_list, et_list, ea_list, tag="op_eval", env=cfg.env, algo=cfg.algo, path=cfg.result_path)
+    plot_speed(v_list, t_list, a_list, acc_list, tag="op_train", env=cfg.env, algo=cfg.algo, path=cfg.result_path)
+    evalplot_speed(ev_list, et_list, ea_list, eacc_list, tag="op_eval", env=cfg.env, algo=cfg.algo, path=cfg.result_path)
 
-    plot_trainep_speed(v_list, t_list, a_list, ep_list, tag="ep_train", env=cfg.env, algo=cfg.algo,
+    plot_trainep_speed(v_list, t_list, a_list, ep_list, acc_list, tag="ep_train", env=cfg.env, algo=cfg.algo,
                        path=cfg.result_path)
-    plot_evalep_speed(ev_list, et_list, ea_list, eval_ep_list, tag="ep_eval", env=cfg.env, algo=cfg.algo,
+    plot_evalep_speed(ev_list, et_list, ea_list, eval_ep_list, eacc_list, tag="ep_eval", env=cfg.env, algo=cfg.algo,
                       path=cfg.result_path)
