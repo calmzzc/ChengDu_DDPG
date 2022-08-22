@@ -128,6 +128,8 @@ class StateNode:
         self.get_gradient_acc()
         self.get_curve_acc()
         self.acc = self.tm_acc + self.bm_acc + self.g_acc + self.c_acc
+        if self.acc < -1.5:
+            self.acc = np.array(-1.5).reshape(1)
 
     # 下面是能耗的计算过程
     def get_ave_v(self):  # 获取平均速度
@@ -220,6 +222,10 @@ class StateNode:
                     self.action = temp_acc * self.train_model.weight / self.train_model.max_traction_force
                 else:
                     self.action = temp_acc * self.train_model.weight / self.train_model.max_brake_force
+                if self.action > 1:
+                    self.action = np.array(1).reshape(1)
+                if self.action < -1:
+                    self.action = np.array(-1).reshape(1)
                 break
             temp_square_velocity = temp_velocity * temp_velocity + 2 * self.acc * self.line.delta_distance
             if temp_square_velocity <= 1:
@@ -230,7 +236,7 @@ class StateNode:
             self.state[1] = velocity
             self.speed_check()
             if self.speed_punish:
-                self.acc = self.acc - 0.15 * (velocity / self.current_limit_speed)
+                self.acc = self.acc - 0.2 * (velocity / self.current_limit_speed)
             else:
                 chaosu_flag = 1
                 temp_acc = self.acc - self.g_acc - self.c_acc
@@ -238,6 +244,10 @@ class StateNode:
                     self.action = temp_acc * self.train_model.weight / self.train_model.max_traction_force
                 else:
                     self.action = temp_acc * self.train_model.weight / self.train_model.max_brake_force
+                if self.action > 1:
+                    self.action = np.array(1).reshape(1)
+                if self.action < -1:
+                    self.action = np.array(-1).reshape(1)
         self.state[1] = temp_velocity
 
     # 下面是奖励的计算

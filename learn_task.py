@@ -29,7 +29,7 @@ class DDPGConfig:
                            '/' + curr_time + '/results/'  # 保存结果的路径
         self.model_path = curr_path + "/outputs/" + self.env + \
                           '/' + curr_time + '/models/'  # 保存模型的路径
-        self.train_eps = 300  # 训练的回合数
+        self.train_eps = 10000  # 训练的回合数
         self.max_step = 500  # 每回合最多步数
         self.eval_eps = 30  # 测试的回合数
         self.gamma = 0.99  # 折扣因子
@@ -174,7 +174,7 @@ def train(cfg, line, agent, train_model):
 def eval(cfg, line, agent, train_model):
     print('开始训练！')
     print(f'环境：{cfg.env}，算法：{cfg.algo}，设备：{cfg.device}')
-    train_flag = 1
+    train_flag = 0
     ou_noise = OUNoise(1)  # 动作噪声,这里的1是动作的维度
     rewards = []  # 记录奖励
     ma_rewards = []  # 记录滑动平均奖励
