@@ -169,4 +169,174 @@ class Section8:
         self.ac_power = 73
 
 
+class Section9:
+    def __init__(self):
+        self.start_station = '''BaiFuoQiao'''  # 出发站
+        self.end_station = '''JiTouQiao'''  # 到达站
+        self.length = 1470  # 站间长度
+        self.delta_distance = 49  # 位置离散
+        # self.max_iteration = self.length / self.delta_distance
+        self.scheduled_time = 91.747  # 计划运行时间
+        self.speed_limit = {  # 线路限速
+            0: 80, 240: 120, 1025: 80, 1470: 0
+        }
+        self.gradient = {  # 坡度
+            0: 0, 209: -22, 459: -5, 709: 5.47, 959: 26, 1234: 0
+        }
+        self.curve = {0: 0, 850: 2500, 1065: 0, 1107: 1500, 1303: 0}  # 曲率
+        self.direction = "XiaXing"  # 运行方向
+        self.tra_power = 45.38  # 牵引能耗
+        self.re_power = 22.86  # 再生制动产生能量
+        self.ac_power = 22.52  # 实际能耗
+
+
+class Section10:
+    def __init__(self):
+        self.start_station = '''JiuJiangBei'''
+        self.end_station = '''BaiFuoQiao'''
+        self.length = 4180
+        self.delta_distance = 38
+        # self.max_iteration = self.length / self.delta_distance
+        self.scheduled_time = 204.47
+        self.speed_limit = {
+            0: 80, 245: 120, 1468: 100, 2391: 120, 3709: 80, 4180: 0
+        }
+        self.gradient = {
+            0: 0, 216: -12.9, 1341: 16, 1741: 5, 2326: 15, 3091: 9, 3541: -12.5, 3841: 0
+        }
+        self.curve = {0: 0, 635: 3000, 848: 0, 937: 1500, 1464: 0, 1604: 650, 1887: 0, 1926: 600, 2229: 0, 2775: 3000, 3038: 0}
+        self.direction = "XiaXing"
+        self.tra_power = 87.92
+        self.re_power = 40.08
+        self.ac_power = 47.84
+
+
+class Section11:
+    def __init__(self):
+        self.start_station = '''MingGuang'''
+        self.end_station = '''JiuJiangBei'''
+        self.length = 6640
+        self.delta_distance = 40
+        # self.max_iteration = self.length / self.delta_distance
+        self.scheduled_time = 258.642
+        self.speed_limit = {
+            0: 45, 334: 110, 1088: 100, 3306: 140, 6197: 80, 6640: 0
+        }
+        self.gradient = {
+            0: 0, 412: -24.58, 862: -10.8, 1842: 28.5, 2422: 11, 3262: -7.84, 4012: 9, 4612: 3.5, 6012: 9.74, 6397: 0
+        }
+        self.curve = {0: 0, 274: 3500, 440: 0, 491: 3500, 641: 0, 1449: 600, 1874: 0, 2150: 600, 3170: 0, 3361: 3500, 3567: 0, 3638: 3500, 3844: 0, 4004: 2500, 4298: 0}
+        self.direction = "XiaXing"
+        self.tra_power = 142.4
+        self.re_power = 61.76
+        self.ac_power = 80.64
+
+
+class Section12:
+    def __init__(self):
+        self.start_station = '''WenQuanDaDao'''
+        self.end_station = '''MingGuang'''
+        self.length = 1980
+        self.delta_distance = 36
+        # self.max_iteration = self.length / self.delta_distance
+        self.scheduled_time = 101.081
+        self.speed_limit = {
+            0: 80, 197: 110, 1509: 80, 1980: 0
+        }
+        self.gradient = {
+            0: 0, 171: -20, 421: -3.5, 921: 10, 1471: 22, 1801: 0
+        }
+        self.curve = {0: 0, 1449: 5000, 1610: 0, 1721: 1200, 1876: 0}
+        self.direction = "XiaXing"
+        self.tra_power = 61.04
+        self.re_power = 16.88
+        self.ac_power = 44.16
+
+
+class Section13:
+    def __init__(self):
+        self.start_station = '''FengXiHe'''
+        self.end_station = '''WenQuanDaDao'''
+        self.length = 2040
+        self.delta_distance = 40
+        # self.max_iteration = self.length / self.delta_distance
+        self.scheduled_time = 103.309
+        self.speed_limit = {
+            0: 80, 206: 120, 1583: 80, 2040: 0
+        }
+        self.gradient = {
+            0: 0, 247: -2, 527: -3, 1912: 0
+        }
+        self.curve = {0: 0, 1250: 6000, 1369: 0, 1758: 6000, 1879: 0}
+        self.direction = "XiaXing"
+        self.tra_power = 67.26
+        self.re_power = 32.1
+        self.ac_power = 35.16
+
+
+class Section14:
+    def __init__(self):
+        self.start_station = '''ShiWuYiYuan'''
+        self.end_station = '''FengXiHe'''
+        self.length = 1850
+        self.delta_distance = 37
+        # self.max_iteration = self.length / self.delta_distance
+        self.scheduled_time = 106.156
+        self.speed_limit = {
+            0: 80, 197: 100, 1120: 70, 1850: 0
+        }
+        self.gradient = {
+            0: 0, 144: 10, 1689: 0
+        }
+        self.curve = {0: 0, 235: 800, 631: 0, 873: 3000, 1155: 0, 1462: 450, 1779: 0}
+        self.direction = "XiaXing"
+        self.tra_power = 48.38
+        self.re_power = 34.16
+        self.ac_power = 14.22
+
+
+class Section15:
+    def __init__(self):
+        self.start_station = '''HuangShi'''
+        self.end_station = '''ShiWuYiYuan'''
+        self.length = 2960
+        self.delta_distance = 37
+        # self.max_iteration = self.length / self.delta_distance
+        self.scheduled_time = 137.973
+        self.speed_limit = {
+            0: 95, 925: 120, 2520: 80, 2960: 0
+        }
+        self.gradient = {
+            0: 0, 248: -25, 648: 17, 1508: 3.25, 2808: 29, 2788: 0
+        }
+        self.curve = {0: 0, 100: 600, 382: 0, 474: 600, 852: 0, 1012: 1200, 1651: 0, 1847: 3500, 2042: 0, 2650: 5000, 2723: 0, 2763: 5000, 2838: 0}
+        self.direction = "XiaXing"
+        self.tra_power = 55.34
+        self.re_power = 45.04
+        self.ac_power = 10.3
+
+
+class Section16:
+    def __init__(self):
+        self.start_station = '''JinXing'''
+        self.end_station = '''HuangShi'''
+        self.length = 4280
+        self.delta_distance = 40
+        # self.max_iteration = self.length / self.delta_distance
+        self.scheduled_time = 171.15
+        self.speed_limit = {
+            0: 100, 760: 140, 3832: 80, 4280: 0
+        }
+        self.gradient = {
+            0: 0, 255: 5.9, 2095: 0, 2995: 8.97, 3945: 0
+        }
+        self.curve = {0: 0, 287: 600, 606: 0, 818: 1004, 1146: 0, 2565: 5004, 2705: 0, 4027: 1000, 4149: 0}
+        self.direction = "XiaXing"
+        self.tra_power = 92.94
+        self.re_power = 58.64
+        self.ac_power = 34.3
+
+
 Section = {"Section1": Section1(), "Section2": Section2(), "Section3": Section3(), "Section4": Section4(), "Section5": Section5(), "Section6": Section6(), "Section7": Section7(), "Section8": Section8()}
+Section2 = {"Section9": Section9(), "Section10": Section10(), "Section11": Section11(), "Section12": Section12(), "Section13": Section13(), "Section14": Section14(), "Section15": Section15(),
+            "Section16": Section16()}

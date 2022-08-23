@@ -12,8 +12,8 @@ class Train:
         # 效率参数
         self.n1 = 0  # 牵引电机效率
         self.n1_b = 0  # 制动电机效率
-        self.n2 = 0.95  # 变压器效率
-        self.n3 = 0.98  # 变流器效率
+        self.n2 = 0.9702  # 变压器效率
+        self.n3 = 0.96  # 变流器效率
         self.n4 = 0.97  # 齿轮箱效率
 
         # 最大牵引力最大制动力
@@ -41,7 +41,7 @@ class Train:
         if cur_v <= 55:
             self.n1 = -0.802 * np.exp(-0.1467 * cur_v) + 0.8904
         else:
-            self.n1 = 0.93
+            self.n1 = 0.927
 
     # 计算制动电机效率
     def get_n1_b(self, cur_v):  # 速度单位为km/h

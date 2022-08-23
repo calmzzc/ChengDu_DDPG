@@ -236,7 +236,8 @@ class StateNode:
             self.state[1] = velocity
             self.speed_check()
             if self.speed_punish:
-                self.acc = self.acc - 0.2 * (velocity / self.current_limit_speed)
+                # self.acc = self.acc - 0.2 * (velocity / self.current_limit_speed)
+                self.acc = self.acc - 0.2
             else:
                 chaosu_flag = 1
                 temp_acc = self.acc - self.g_acc - self.c_acc
@@ -269,9 +270,11 @@ class StateNode:
             if self.speed_punish:
                 unsafe_counts += 1
                 self.current_reward = -0.001 * total_power - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
+                # self.current_reward = -1 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish + self.p_indicator
             else:
                 unsafe_counts += 0
                 self.current_reward = -0.001 * total_power - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
+                # self.current_reward = -1 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
         else:
             done = 0
             temp_time = self.line.delta_distance / (self.state[1] / 2 + self.next_state[1] / 2)

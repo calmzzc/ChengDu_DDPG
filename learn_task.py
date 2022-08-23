@@ -24,7 +24,7 @@ curr_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")  # 获取当前时
 class DDPGConfig:
     def __init__(self):
         self.algo = 'DDPG_CD'  # 算法名称
-        self.env = "Section3"  # 环境名称
+        self.env = "Section1"  # 环境名称
         self.result_path = curr_path + "/outputs/" + self.env + \
                            '/' + curr_time + '/results/'  # 保存结果的路径
         self.model_path = curr_path + "/outputs/" + self.env + \
