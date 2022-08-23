@@ -204,13 +204,13 @@ def plot_trainep_speed(total_v_list, total_t_list, total_a_list, total_ep_list, 
     if save:
         plt.savefig(path + f"{tag}_action_cn")
     plt.figure()
-    ax2 = plt.axes(projection='3d')
+    ax3 = plt.axes(projection='3d')
     for j in range(len(total_ep_list)):
         if j % 50 == 0:
             a1 = np.array(total_acc_list[j]).reshape(-1)
             b1 = np.array(total_t_list[j]).reshape(-1)
             c1 = np.linspace(total_ep_list[j], total_ep_list[j], len(total_t_list[j]))
-            ax2.plot3D(b1, c1, a1)
+            ax3.plot3D(b1, c1, a1)
     plt.legend((u'加速度曲线',), loc='best', prop=chinese_font())
     if save:
         plt.savefig(path + f"{tag}_acc_cn")
@@ -246,13 +246,13 @@ def plot_evalep_speed(total_v_list, total_t_list, total_a_list, total_ep_list, t
     if save:
         plt.savefig(path + f"{tag}_action_cn")
     plt.figure()
-    ax2 = plt.axes(projection='3d')
+    ax3 = plt.axes(projection='3d')
     for j in range(len(total_ep_list)):
         if j % 6 == 0:
             a1 = np.array(total_acc_list[j]).reshape(-1)
             b1 = np.array(total_t_list[j]).reshape(-1)
             c1 = np.linspace(total_ep_list[j], total_ep_list[j], len(total_t_list[j]))
-            ax2.plot3D(b1, c1, a1)
+            ax3.plot3D(b1, c1, a1)
     plt.legend((u'加速度曲线',), loc='best', prop=chinese_font())
     if save:
         plt.savefig(path + f"{tag}_acc_cn")

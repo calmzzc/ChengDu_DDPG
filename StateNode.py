@@ -146,10 +146,10 @@ class StateNode:
     def get_power(self):
         self.get_ave_v()
         if self.action < 0:
-            self.t_power = 0
+            self.t_power = np.array(0.0).reshape(1)
             self.get_re_power()
         else:
-            self.re_power = 0
+            self.re_power = np.array(0.0).reshape(1)
             self.get_t_power()
 
     # 下面是超速检查过程
@@ -222,10 +222,10 @@ class StateNode:
                     self.action = temp_acc * self.train_model.weight / self.train_model.max_traction_force
                 else:
                     self.action = temp_acc * self.train_model.weight / self.train_model.max_brake_force
-                if self.action > 1:
-                    self.action = np.array(1).reshape(1)
-                if self.action < -1:
-                    self.action = np.array(-1).reshape(1)
+                if self.action > 1.5:
+                    self.action = np.array(1.5).reshape(1)
+                if self.action < -1.5:
+                    self.action = np.array(-1.5).reshape(1)
                 break
             temp_square_velocity = temp_velocity * temp_velocity + 2 * self.acc * self.line.delta_distance
             if temp_square_velocity <= 1:
@@ -244,10 +244,10 @@ class StateNode:
                     self.action = temp_acc * self.train_model.weight / self.train_model.max_traction_force
                 else:
                     self.action = temp_acc * self.train_model.weight / self.train_model.max_brake_force
-                if self.action > 1:
-                    self.action = np.array(1).reshape(1)
-                if self.action < -1:
-                    self.action = np.array(-1).reshape(1)
+                if self.action > 1.5:
+                    self.action = np.array(1.5).reshape(1)
+                if self.action < -1.5:
+                    self.action = np.array(-1.5).reshape(1)
         self.state[1] = temp_velocity
 
     # 下面是奖励的计算
@@ -256,7 +256,7 @@ class StateNode:
         self.comfort_check()
         if self.step == self.max_step:
             done = 1
-            if abs(self.next_state[0] - self.line.scheduled_time) <= 5 and abs(self.next_state[1]) <= 1:
+            if abs(self.next_state[0] - self.line.scheduled_time) <= 10 and abs(self.next_state[1]) <= 3:
                 e_reward = 100  # 准时且停下施加额外奖励
             else:
                 e_reward = 0
@@ -277,10 +277,20 @@ class StateNode:
             temp_time = self.line.delta_distance / (self.state[1] / 2 + self.next_state[1] / 2)
             if self.speed_punish:
                 unsafe_counts += 1
-                self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1.3 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) + self.p_indicator - 10 * self.comfort_punish
+                # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) + self.p_indicator - 10 * self.comfort_punish
+                self.current_reward = -1 * self.t_power - 1 * self.re_power - 1 * abs(
+                    1 * temp_time - (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) + self.p_indicator - 10 * self.comfort_punish  # 当前step的运行时间和剩余距离平均时间的差值
+                # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - abs(1 * (
+                #         2 * self.line.delta_distance * (self.max_step + 1 - self.step) / (abs(self.line.scheduled_time - self.state[0])) - self.state[
+                #     1])) + self.p_indicator - 10 * self.comfort_punish  # 当前step速度和剩余平均速度的差值
             else:
                 unsafe_counts += 0
-                self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1.3 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) - 10 * self.comfort_punish
+                # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) - 10 * self.comfort_punish
+                self.current_reward = -1 * self.t_power - 1 * self.re_power - 1 * abs(
+                    1 * temp_time - (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) - 10 * self.comfort_punish
+                # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - abs(1 * (
+                #         2 * self.line.delta_distance * (self.max_step + 1 - self.step) / (abs(self.line.scheduled_time - self.state[0])) - self.state[
+                #     1])) - 10 * self.comfort_punish
         return done, unsafe_counts
 
     def get_current_q(self):  # 获取当前Q值
