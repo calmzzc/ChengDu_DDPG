@@ -266,14 +266,14 @@ def eval(cfg, line, agent, train_model):
 
 if __name__ == "__main__":
     cfg = DDPGConfig()
-    line, agent, train_model = env_agent_config(cfg, seed=4)
+    line, agent, train_model = env_agent_config(cfg, seed=10)
     t_rewards, t_ma_rewards, v_list, t_list, a_list, ep_list, power_list, ma_power_list, unsafe_c, ma_unsafe_c, acc_list, total_t_power_list, total_re_power_list = train(cfg, line, agent, train_model)
     make_dir(cfg.result_path, cfg.model_path)
     agent.save(path=cfg.model_path)
     save_results(t_rewards, t_ma_rewards, tag='train', path=cfg.result_path)
 
     # 测试
-    line, agent, train_mdoel = env_agent_config(cfg, seed=4)
+    line, agent, train_mdoel = env_agent_config(cfg, seed=10)
     agent.load(path=cfg.model_path)
     rewards, ma_rewards, ev_list, et_list, ea_list, eval_ep_list, eacc_list = eval(cfg, line, agent, train_model)
     save_results(rewards, ma_rewards, tag='eval', path=cfg.result_path)
