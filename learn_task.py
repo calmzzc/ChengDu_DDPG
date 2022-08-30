@@ -13,6 +13,9 @@ from plot import plot_rewards_cn, plot_speed, evalplot_speed, plot_trainep_speed
     plot_power_cn, plot_unsafecounts_cn
 from line import Section
 from StateNode import StateNode
+from MctsStateNode import MctsStateNode
+
+warnings.filterwarnings("ignore")
 
 curr_path = os.path.dirname(os.path.abspath(__file__))  # 当前文件所在绝对路径
 parent_path = os.path.dirname(curr_path)  # 父路径
@@ -97,12 +100,15 @@ def train(cfg, line, agent, train_model):
         t_power = 0
         re_power = 0
         state_node = StateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model)
+        # Mcts要用下面这个
+        # state_node = MctsStateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
         node_list.append(state_node)
         while True:
             i_step += 1
             state_node.get_last_node(node_list)
-            # state_node.state_transition()
-            state_node.safe_state_transition()
+            state_node.state_transition() # 一般动作转移
+            # state_node.safe_state_transition() # Shield动作转移
+            # state_node.Mcts_State_Transition() # Shield Mcts动作转移
             total_power = total_power + state_node.t_power + state_node.re_power
             t_power += state_node.t_power
             re_power += state_node.re_power
@@ -134,6 +140,8 @@ def train(cfg, line, agent, train_model):
 
             # 生成下一个新的节点
             state_node = StateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model)
+            # Mcts要用下面这个
+            # state_node = MctsStateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
             node_list.append(state_node)
         if (i_ep + 1) % 10 == 0:
             print('回合：{}/{}，奖励：{}, 能耗  {}, 牵引能耗  {}, 最终时间  {}, 最终速度  {}, 不安全次数  {}, 最终位置 {}'.format(i_ep + 1,
@@ -208,12 +216,15 @@ def eval(cfg, line, agent, train_model):
         t_power = 0
         re_power = 0
         state_node = StateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model)
+        # Mcts要用下面这个
+        # state_node = MctsStateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
         node_list.append(state_node)
         while True:
             i_step += 1
             state_node.get_last_node(node_list)
-            # state_node.state_transition()
-            state_node.safe_state_transition()
+            state_node.state_transition() # 一般动作转移
+            # state_node.safe_state_transition() # Shield动作转移
+            # state_node.Mcts_State_Transition() # Shield Mcts动作转移
             total_power = total_power + state_node.t_power + state_node.re_power
             t_power += state_node.t_power
             re_power += state_node.re_power
@@ -235,6 +246,8 @@ def eval(cfg, line, agent, train_model):
                 break
             # 生成下一个新的节点
             state_node = StateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model)
+            # Mcts要用下面这个
+            # state_node = MctsStateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
             node_list.append(state_node)
         print('回合：{}/{}，奖励：{}, 能耗  {}, 牵引能耗  {}, 最终时间  {}, 最终速度  {}, 不安全次数  {}, 最终位置 {}'.format(i_ep + 1,
                                                                                                 cfg.train_eps,
@@ -266,14 +279,14 @@ def eval(cfg, line, agent, train_model):
 
 if __name__ == "__main__":
     cfg = DDPGConfig()
-    line, agent, train_model = env_agent_config(cfg, seed=10)
+    line, agent, train_model = env_agent_config(cfg, seed=1)
     t_rewards, t_ma_rewards, v_list, t_list, a_list, ep_list, power_list, ma_power_list, unsafe_c, ma_unsafe_c, acc_list, total_t_power_list, total_re_power_list = train(cfg, line, agent, train_model)
     make_dir(cfg.result_path, cfg.model_path)
     agent.save(path=cfg.model_path)
     save_results(t_rewards, t_ma_rewards, tag='train', path=cfg.result_path)
 
     # 测试
-    line, agent, train_mdoel = env_agent_config(cfg, seed=10)
+    line, agent, train_mdoel = env_agent_config(cfg, seed=1)
     agent.load(path=cfg.model_path)
     rewards, ma_rewards, ev_list, et_list, ea_list, eval_ep_list, eacc_list = eval(cfg, line, agent, train_model)
     save_results(rewards, ma_rewards, tag='eval', path=cfg.result_path)
