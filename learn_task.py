@@ -106,8 +106,8 @@ def train(cfg, line, agent, train_model):
         while True:
             i_step += 1
             state_node.get_last_node(node_list)
-            state_node.state_transition() # 一般动作转移
-            # state_node.safe_state_transition() # Shield动作转移
+            # state_node.state_transition() # 一般动作转移
+            state_node.safe_state_transition() # Shield动作转移
             # state_node.Mcts_State_Transition() # Shield Mcts动作转移
             total_power = total_power + state_node.t_power + state_node.re_power
             t_power += state_node.t_power
@@ -222,8 +222,8 @@ def eval(cfg, line, agent, train_model):
         while True:
             i_step += 1
             state_node.get_last_node(node_list)
-            state_node.state_transition() # 一般动作转移
-            # state_node.safe_state_transition() # Shield动作转移
+            # state_node.state_transition() # 一般动作转移
+            state_node.safe_state_transition() # Shield动作转移
             # state_node.Mcts_State_Transition() # Shield Mcts动作转移
             total_power = total_power + state_node.t_power + state_node.re_power
             t_power += state_node.t_power

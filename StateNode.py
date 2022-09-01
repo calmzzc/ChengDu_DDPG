@@ -204,16 +204,39 @@ class StateNode:
         self.get_action()
         self.reshape_action()
         self.get_acc()
-        self.get_safe_action()
-        self.get_acc()
+        if self.Shield_Check():
+            self.get_safe_action()
+            self.get_acc()
         self.get_next_state()
         self.get_power()
+
+    # 判断是否需要使用Shield
+    def Shield_Check(self):
+        key_list = []
+        key = 0
+        for i in self.line.speed_limit.keys():
+            key_list.append(i)
+        for j in range(len(key_list) - 1):
+            if key_list[j] <= self.step * self.line.delta_distance < key_list[j + 1]:
+                key = key_list[j]
+        next_limit_speed = self.line.speed_limit[key]
+        temp_velocity = np.array(self.state[1]).reshape(1)
+        temp_square_velocity = temp_velocity * temp_velocity + 2 * self.acc * self.line.delta_distance
+        if temp_square_velocity <= 1:
+            temp_square_velocity = np.array(1).reshape(1)
+        velocity = np.sqrt(temp_square_velocity)
+        if velocity <= 0:
+            velocity = np.array(1).reshape(1)
+        if velocity * 3.6 > next_limit_speed:
+            return 1
+        else:
+            return 0
 
     # 获取安全动作的函数
     def get_safe_action(self):
         xunhuan_count = 0
         chaosu_flag = 0
-        temp_velocity = self.state[1].copy()
+        initial_velocity = self.state[1].copy()
         while chaosu_flag != 1:
             xunhuan_count += 1
             if xunhuan_count > 15:
@@ -227,6 +250,7 @@ class StateNode:
                 if self.action < -1.5:
                     self.action = np.array(-1.5).reshape(1)
                 break
+            temp_velocity = self.state[1]
             temp_square_velocity = temp_velocity * temp_velocity + 2 * self.acc * self.line.delta_distance
             if temp_square_velocity <= 1:
                 temp_square_velocity = np.array(1).reshape(1)
@@ -252,7 +276,7 @@ class StateNode:
                     self.action = np.array(1.5).reshape(1)
                 if self.action < -1.5:
                     self.action = np.array(-1.5).reshape(1)
-        self.state[1] = temp_velocity
+        self.state[1] = initial_velocity
 
     # 下面是奖励的计算
     def get_reward(self, unsafe_counts, total_power):
