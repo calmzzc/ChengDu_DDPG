@@ -262,7 +262,10 @@ class StateNode:
             if self.speed_punish:
                 # self.acc = self.acc - 0.2 * (velocity / self.current_limit_speed)
                 if xunhuan_count == 1:
-                    self.acc = -0.5 * self.acc
+                    if self.acc > 0:
+                        self.acc = -0.5 * self.acc
+                    else:
+                        self.acc = self.acc - 0.2
                 else:
                     self.acc = self.acc - 0.2
             else:
