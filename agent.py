@@ -58,7 +58,7 @@ class DDPG:
         reward = torch.FloatTensor(reward).to(self.device)
         # done = torch.FloatTensor(np.float64(done)).unsqueeze(1).to(self.device)
         # done = torch.FloatTensor(done).unsqueeze(1).to(self.device)
-        done = torch.FloatTensor(done).to(self.device)
+        done = torch.FloatTensor(done).unsqueeze(1).to(self.device)
 
         policy_loss = self.critic(state, self.actor(state))
         policy_loss = -policy_loss.mean()
