@@ -107,7 +107,7 @@ def train(cfg, line, agent, train_model):
             i_step += 1
             state_node.get_last_node(node_list)
             # state_node.state_transition() # 一般动作转移
-            state_node.safe_state_transition() # Shield动作转移
+            state_node.safe_state_transition()  # Shield动作转移
             # state_node.Mcts_State_Transition() # Shield Mcts动作转移
             total_power = total_power + state_node.t_power + state_node.re_power
             t_power += state_node.t_power
@@ -215,15 +215,15 @@ def eval(cfg, line, agent, train_model):
         total_power = 0
         t_power = 0
         re_power = 0
-        state_node = StateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model)
+        # state_node = StateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model)
         # Mcts要用下面这个
-        # state_node = MctsStateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
+        state_node = MctsStateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
         node_list.append(state_node)
         while True:
             i_step += 1
             state_node.get_last_node(node_list)
             # state_node.state_transition() # 一般动作转移
-            state_node.safe_state_transition() # Shield动作转移
+            state_node.safe_state_transition()  # Shield动作转移
             # state_node.Mcts_State_Transition() # Shield Mcts动作转移
             total_power = total_power + state_node.t_power + state_node.re_power
             t_power += state_node.t_power
@@ -279,14 +279,14 @@ def eval(cfg, line, agent, train_model):
 
 if __name__ == "__main__":
     cfg = DDPGConfig()
-    line, agent, train_model = env_agent_config(cfg, seed=2)
+    line, agent, train_model = env_agent_config(cfg, seed=1)
     t_rewards, t_ma_rewards, v_list, t_list, a_list, ep_list, power_list, ma_power_list, unsafe_c, ma_unsafe_c, acc_list, total_t_power_list, total_re_power_list = train(cfg, line, agent, train_model)
     make_dir(cfg.result_path, cfg.model_path)
     agent.save(path=cfg.model_path)
     save_results(t_rewards, t_ma_rewards, tag='train', path=cfg.result_path)
 
     # 测试
-    line, agent, train_mdoel = env_agent_config(cfg, seed=2)
+    line, agent, train_mdoel = env_agent_config(cfg, seed=1)
     agent.load(path=cfg.model_path)
     rewards, ma_rewards, ev_list, et_list, ea_list, eval_ep_list, eacc_list = eval(cfg, line, agent, train_model)
     save_results(rewards, ma_rewards, tag='eval', path=cfg.result_path)

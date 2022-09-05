@@ -66,6 +66,12 @@ class StateNode:
             self.action = np.array(self.action).reshape(1)
 
     def reshape_action(self):  # 重整动作
+        if self.step <= 3:
+            self.action = (self.action + 1) / 2
+        elif self.max_step - self.step <= 3:
+            self.action = (self.action - 0.5) / 2
+        else:
+            self.action = self.action
         low_bound = -1
         upper_bound = 1
         # 重整当前动作
@@ -263,7 +269,8 @@ class StateNode:
                 # self.acc = self.acc - 0.2 * (velocity / self.current_limit_speed)
                 if xunhuan_count == 1:
                     if self.acc > 0:
-                        self.acc = -0.5 * self.acc
+                        # self.acc = self.acc - 0.2
+                        self.acc = self.acc - 0.2
                     else:
                         self.acc = self.acc - 0.2
                 else:
@@ -292,7 +299,7 @@ class StateNode:
             else:
                 e_reward = 0
             if self.line.scheduled_time - self.next_state[0] < -10:
-                t_punish = -10  # 晚点超过10s的惩罚
+                t_punish = -self.next_state[0] + self.line.scheduled_time  # 晚点超过10s的惩罚
             elif self.line.scheduled_time - self.next_state[0] > 0:
                 t_punish = -self.line.scheduled_time + self.next_state[0]  # 早到的惩罚
             else:
@@ -300,12 +307,12 @@ class StateNode:
             if self.speed_punish:
                 unsafe_counts += 1
                 # self.current_reward = -0.001 * total_power - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
-                self.current_reward = -3 * (total_power - self.line.ac_power) - 2.5 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
+                self.current_reward = -3 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 2 * t_punish + e_reward - 10 * self.comfort_punish
                 # self.current_reward = -1 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish + self.p_indicator
             else:
                 unsafe_counts += 0
                 # self.current_reward = -0.001 * total_power - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
-                self.current_reward = -3 * (total_power - self.line.ac_power) - 2.5 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
+                self.current_reward = -3 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 2 * t_punish + e_reward - 10 * self.comfort_punish
                 # self.current_reward = -1 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
         else:
             done = 0
@@ -313,16 +320,16 @@ class StateNode:
             if self.speed_punish:
                 unsafe_counts += 1
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) + self.p_indicator - 10 * self.comfort_punish
-                self.current_reward = -10 * self.t_power - 10 * self.re_power - 3.5 * abs(
-                    1.5 * temp_time - 1 * (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) + self.p_indicator - 10 * self.comfort_punish  # 当前step的运行时间和剩余距离平均时间的差值
+                self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3 * abs(
+                    1 * temp_time - 1 * (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) + self.p_indicator - 10 * self.comfort_punish  # 当前step的运行时间和剩余距离平均时间的差值
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - abs(1 * (
                 #         2 * self.line.delta_distance * (self.max_step + 1 - self.step) / (abs(self.line.scheduled_time - self.state[0])) - self.state[
                 #     1])) + self.p_indicator - 10 * self.comfort_punish  # 当前step速度和剩余平均速度的差值
             else:
                 unsafe_counts += 0
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) - 10 * self.comfort_punish
-                self.current_reward = -10 * self.t_power - 10 * self.re_power - 3.5 * abs(
-                    1.5 * temp_time - 1 * (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) - 10 * self.comfort_punish
+                self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3 * abs(
+                    1 * temp_time - 1 * (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) - 10 * self.comfort_punish
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - abs(1 * (
                 #         2 * self.line.delta_distance * (self.max_step + 1 - self.step) / (abs(self.line.scheduled_time - self.state[0])) - self.state[
                 #     1])) - 10 * self.comfort_punish
