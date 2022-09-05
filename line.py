@@ -27,7 +27,7 @@ class Section2:
         self.start_station = '''BaiFuoQiao'''
         self.end_station = '''JiuJiangBei'''
         self.length = 4180
-        self.delta_distance = 38
+        self.delta_distance = 76
         # self.max_iteration = self.length / self.delta_distance
         self.scheduled_time = 183.15
         self.speed_limit = {

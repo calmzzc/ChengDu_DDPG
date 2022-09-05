@@ -11,7 +11,7 @@ from agent import DDPG
 from utils import save_results, make_dir
 from plot import plot_rewards_cn, plot_speed, evalplot_speed, plot_trainep_speed, plot_evalep_speed, \
     plot_power_cn, plot_unsafecounts_cn
-from line import Section
+from line import Section, Section2
 from StateNode import StateNode
 from MctsStateNode import MctsStateNode
 
@@ -27,7 +27,7 @@ curr_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")  # 获取当前时
 class DDPGConfig:
     def __init__(self):
         self.algo = 'DDPG_CD'  # 算法名称
-        self.env = "Section1"  # 环境名称
+        self.env = "Section8"  # 环境名称
         self.result_path = curr_path + "/outputs/" + self.env + \
                            '/' + curr_time + '/results/'  # 保存结果的路径
         self.model_path = curr_path + "/outputs/" + self.env + \

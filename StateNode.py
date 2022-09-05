@@ -66,12 +66,12 @@ class StateNode:
             self.action = np.array(self.action).reshape(1)
 
     def reshape_action(self):  # 重整动作
-        if self.step <= 3:
-            self.action = (self.action + 1) / 2
-        elif self.max_step - self.step <= 3:
-            self.action = (self.action - 0.5) / 2
-        else:
-            self.action = self.action
+        # if self.step <= 3:
+        #     self.action = (self.action + 1) / 2
+        # elif self.max_step - self.step <= 3:
+        #     self.action = (self.action - 0.5) / 2
+        # else:
+        #     self.action = self.action
         low_bound = -1
         upper_bound = 1
         # 重整当前动作
@@ -178,7 +178,7 @@ class StateNode:
     # 下面是舒适度检查过程
     def comfort_check(self):
         if abs(self.acc - self.last_node_acc) >= 0.3:
-            self.comfort_punish = 1  # 不舒适
+            self.comfort_punish = 1.5  # 不舒适
         else:
             self.comfort_punish = 0
 
@@ -270,11 +270,11 @@ class StateNode:
                 if xunhuan_count == 1:
                     if self.acc > 0:
                         # self.acc = self.acc - 0.2
-                        self.acc = self.acc - 0.2
+                        self.acc = self.acc - 0.2 * (velocity / self.current_limit_speed)
                     else:
-                        self.acc = self.acc - 0.2
+                        self.acc = self.acc - 0.2 * (velocity / self.current_limit_speed)
                 else:
-                    self.acc = self.acc - 0.2
+                    self.acc = self.acc - 0.2 * (velocity / self.current_limit_speed)
             else:
                 chaosu_flag = 1
                 temp_acc = self.acc - self.g_acc - self.c_acc
@@ -320,7 +320,7 @@ class StateNode:
             if self.speed_punish:
                 unsafe_counts += 1
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) + self.p_indicator - 10 * self.comfort_punish
-                self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3 * abs(
+                self.current_reward = -0.5 * self.t_power - 0.5 * self.re_power - 15 * abs(
                     1 * temp_time - 1 * (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) + self.p_indicator - 10 * self.comfort_punish  # 当前step的运行时间和剩余距离平均时间的差值
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - abs(1 * (
                 #         2 * self.line.delta_distance * (self.max_step + 1 - self.step) / (abs(self.line.scheduled_time - self.state[0])) - self.state[
@@ -328,7 +328,7 @@ class StateNode:
             else:
                 unsafe_counts += 0
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) - 10 * self.comfort_punish
-                self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3 * abs(
+                self.current_reward = -0.5 * self.t_power - 0.5 * self.re_power - 15 * abs(
                     1 * temp_time - 1 * (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) - 10 * self.comfort_punish
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - abs(1 * (
                 #         2 * self.line.delta_distance * (self.max_step + 1 - self.step) / (abs(self.line.scheduled_time - self.state[0])) - self.state[
