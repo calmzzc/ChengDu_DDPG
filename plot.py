@@ -223,7 +223,7 @@ def plot_evalep_speed(total_v_list, total_t_list, total_a_list, total_ep_list, t
                       path='./'):
     # sns.set()
     plt.figure()
-    plt.title(u"{}环境下{}算法的评价速度曲线（分幕）".format(env, algo), fontproperties=chinese_font())
+    # plt.title(u"{}环境下{}算法的评价速度曲线（分幕）".format(env, algo), fontproperties=chinese_font())
     ax1 = plt.axes(projection='3d')
     for i in range(len(total_ep_list)):
         if i % 6 == 0:
