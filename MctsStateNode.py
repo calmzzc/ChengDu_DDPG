@@ -382,6 +382,8 @@ class MctsStateNode:
         self.get_gradient_acc()
         self.get_curve_acc()
         self.acc = self.tm_acc + self.bm_acc + self.g_acc + self.c_acc
+        if self.acc > 1.5:
+            self.acc = np.array(1.5).reshape(1)
         if self.acc < -1.5:
             self.acc = np.array(-1.5).reshape(1)
 
@@ -426,7 +428,7 @@ class MctsStateNode:
     # 下面是舒适度检查过程
     def comfort_check(self):
         if abs(self.acc - self.last_node_acc) >= 0.3:
-            self.comfort_punish = 1  # 不舒适
+            self.comfort_punish = 1.5  # 不舒适
         else:
             self.comfort_punish = 0
 
@@ -551,20 +553,20 @@ class MctsStateNode:
             if self.speed_punish:
                 unsafe_counts += 1
                 # self.current_reward = -0.001 * total_power - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
-                self.current_reward = -3 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 20 * t_punish + e_reward - 10 * self.comfort_punish
+                self.current_reward = -3 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 2 * t_punish + e_reward - 10 * self.comfort_punish
                 # self.current_reward = -1 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish + self.p_indicator
             else:
                 unsafe_counts += 0
                 # self.current_reward = -0.001 * total_power - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
-                self.current_reward = -3 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 20 * t_punish + e_reward - 10 * self.comfort_punish
+                self.current_reward = -3 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 2 * t_punish + e_reward - 10 * self.comfort_punish
                 # self.current_reward = -1 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
         else:
-            done = 0
+            done = 0  # 能耗前的系数影响平化程度，时间项的系数影响整体的曲线形状
             temp_time = self.line.delta_distance / (self.state[1] / 2 + self.next_state[1] / 2)
             if self.speed_punish:
                 unsafe_counts += 1
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) + self.p_indicator - 10 * self.comfort_punish
-                self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 5 * abs(
+                self.current_reward = -5 * self.t_power - 5 * self.re_power - 15 * abs(
                     1 * temp_time - 1 * (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) + self.p_indicator - 10 * self.comfort_punish  # 当前step的运行时间和剩余距离平均时间的差值
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - abs(1 * (
                 #         2 * self.line.delta_distance * (self.max_step + 1 - self.step) / (abs(self.line.scheduled_time - self.state[0])) - self.state[
@@ -572,7 +574,7 @@ class MctsStateNode:
             else:
                 unsafe_counts += 0
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) - 10 * self.comfort_punish
-                self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 5 * abs(
+                self.current_reward = -5 * self.t_power - 5 * self.re_power - 15 * abs(
                     1 * temp_time - 1 * (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) - 10 * self.comfort_punish
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - abs(1 * (
                 #         2 * self.line.delta_distance * (self.max_step + 1 - self.step) / (abs(self.line.scheduled_time - self.state[0])) - self.state[
