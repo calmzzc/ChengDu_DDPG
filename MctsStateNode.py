@@ -70,7 +70,7 @@ class MctsStateNode:
         return max(self._children.items(), key=lambda act_node: act_node[1].get_value(c_puct))
 
     def get_value(self, c_puct):
-        self._u = c_puct * np.sqrt(np.log(self._parent._n_visits) / self._n_visits)
+        self._u = c_puct * np.sqrt(np.log(self._parent._n_visits) / (self._n_visits or 1))
         return self._Q + self._u + self._R
 
     def get_next_max_speed(self):
@@ -124,7 +124,7 @@ class MctsStateNode:
         elif -1.5 <= self.next_max_action < -1.2:
             self.max_action_index = 0
         else:
-            self.max_action_index = 0
+            self.max_action_index = 1
 
     def expand(self):
         self.get_next_max_speed()
@@ -144,10 +144,10 @@ class MctsStateNode:
         self.comfort_check()
         temp_time = self.line.delta_distance / (self.state[1] / 2 + self.next_state[1] / 2)
         if self.speed_punish:
-            self.current_reward = -1 * self.t_power - 1 * self.re_power - 1 * abs(
+            self.current_reward = -4.3 * self.t_power - 4.3 * self.re_power - 15.5 * abs(
                 1 * temp_time - (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) + self.p_indicator - 10 * self.comfort_punish  # 当前step的运行时间和剩余距离平均时间的差值
         else:
-            self.current_reward = -1 * self.t_power - 1 * self.re_power - 1 * abs(
+            self.current_reward = -4.3 * self.t_power - 4.3 * self.re_power - 15.5 * abs(
                 1 * temp_time - (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) - 10 * self.comfort_punish
 
     def update(self):
@@ -289,7 +289,7 @@ class MctsStateNode:
         self.get_action()
         self.reshape_action()
         self.get_acc()
-        if self.Mcts_Check():
+        if self.Mcts_Check() and self.step < self.max_step:
             self.Mcts_Start()
         self.get_next_state()
         self.get_power()
