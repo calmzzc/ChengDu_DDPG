@@ -28,7 +28,7 @@ curr_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")  # 获取当前时
 class DDPGConfig:
     def __init__(self):
         self.algo = 'DDPG_CD'  # 算法名称
-        self.env = "Section1"  # 环境名称
+        self.env = "Section16"  # 环境名称
         self.train_eps = 500  # 训练的回合数
         self.max_step = 500  # 每回合最多步数
         self.eval_eps = 500  # 测试的回合数
@@ -61,7 +61,7 @@ def env_agent_config(cfg, seed=1):
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
 
-    state_dim = 2
+    state_dim = 4
     action_dim = 1
     agent = DDPG(state_dim, action_dim, cfg)
     train_model = Train()
@@ -89,9 +89,11 @@ def train(cfg, line, agent, train_model):
     node_list = []  # 节点列表
     for i_ep in range(cfg.train_eps):
         total_ep_list.append(i_ep)
-        state = np.zeros(2)
+        state = np.zeros(4)
         state[0] = np.array(0).reshape(1)
         state[1] = np.array(0).reshape(1)
+        state[2] = np.array(0).reshape(1)
+        state[3] = np.array(0).reshape(1)
         # state[2] = np.array(0).reshape(1)
         ou_noise.reset()
         done = False
@@ -225,9 +227,11 @@ def eval(cfg, line, agent, train_model):
     node_list = []  # 节点列表
     for i_ep in range(cfg.eval_eps):
         total_ep_list.append(i_ep)
-        state = np.zeros(2)
+        state = np.zeros(4)
         state[0] = np.array(0).reshape(1)
         state[1] = np.array(0).reshape(1)
+        state[2] = np.array(0).reshape(1)
+        state[3] = np.array(0).reshape(1)
         # state[2] = np.array(0).reshape(1)
         ou_noise.reset()
         done = False
@@ -319,7 +323,7 @@ def eval(cfg, line, agent, train_model):
 
 if __name__ == "__main__":
     cfg = DDPGConfig()
-    line, agent, train_model = env_agent_config(cfg, seed=2)
+    line, agent, train_model = env_agent_config(cfg, seed=3)
     train_time_start = time.time()
     t_rewards, t_ma_rewards, v_list, t_list, a_list, ep_list, power_list, ma_power_list, unsafe_c, ma_unsafe_c, acc_list, total_t_power_list, total_re_power_list, limit_list, A_limit_list, slope_list = train(
         cfg, line, agent, train_model)
@@ -330,7 +334,7 @@ if __name__ == "__main__":
     save_results(t_rewards, t_ma_rewards, tag='train', path=cfg.result_path)
 
     # 测试
-    line, agent, train_mdoel = env_agent_config(cfg, seed=2)
+    line, agent, train_mdoel = env_agent_config(cfg, seed=3)
     agent.load(path=cfg.model_path)
     eval_time_start = time.time()
     rewards, ma_rewards, ev_list, et_list, ea_list, eval_ep_list, eacc_list, cal_list = eval(cfg, line, agent,
@@ -352,7 +356,7 @@ if __name__ == "__main__":
                    algo=cfg.algo,
                    path=cfg.result_path)
 
-    draw_cum_prob_curve(cal_list, bins=40, title="TEST", xlabel="DATA", tag="cal_time", path=cfg.result_path)
+    draw_cum_prob_curve(cal_list, bins=40, xlabel="Calculation Time (s)", tag="cal_time", path=cfg.result_path)
     # plot_trainep_speed(v_list, t_list, a_list, ep_list, acc_list, tag="ep_train", env=cfg.env, algo=cfg.algo,
     #                    path=cfg.result_path)
     # plot_evalep_speed(ev_list, et_list, ea_list, eval_ep_list, eacc_list, tag="ep_eval", env=cfg.env, algo=cfg.algo,
@@ -361,9 +365,9 @@ if __name__ == "__main__":
     print("计算时间为{}".format(eval_time / cfg.eval_eps))
 
     # 数据导出
-    # output_excel = {'t_rewards': t_rewards, 't_ma_rewards': t_ma_rewards, 'rewards': rewards, 'ma_rewards': ma_rewards, 'ev_list': ev_list[1], 'et_list': et_list[1],
-    #                 'ea_list': ea_list[1],
-    #                 'eacc_list': eacc_list[1],
-    #                 'limit_list': limit_list, 'A_limit_list': A_limit_list, 'unsafe_c': unsafe_c, 'ma_unsafe_c': ma_unsafe_c, 'slope_list': slope_list}
-    # output = pd.DataFrame.from_dict(output_excel, orient='index')
-    # output.to_excel(cfg.data_path + 'data.xlsx', index=False)
+    output_excel = {'t_rewards': t_rewards, 't_ma_rewards': t_ma_rewards, 'rewards': rewards, 'ma_rewards': ma_rewards, 'ev_list': ev_list[1], 'et_list': et_list[1],
+                    'ea_list': ea_list[1],
+                    'eacc_list': eacc_list[1],
+                    'limit_list': limit_list, 'A_limit_list': A_limit_list, 'unsafe_c': unsafe_c, 'ma_unsafe_c': ma_unsafe_c, 'slope_list': slope_list}
+    output = pd.DataFrame.from_dict(output_excel, orient='index')
+    output.to_excel(cfg.data_path + '{}_data.xlsx'.format(cfg.algo_n + '_' + cfg.algo), index=False)

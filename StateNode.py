@@ -26,7 +26,7 @@ class StateNode:
         self.last_node_action = 0  # 前一个节点的动作
         self.last_node_acc = 0  # 前一个节点的加速度
 
-        self.next_state = np.zeros(2)  # 状态转移后的状态
+        self.next_state = np.zeros(4)  # 状态转移后的状态
         self.t_power = 0.0  # 状态转移过程的牵引能耗
         self.re_power = 0  # 状态转移过程产生的再生制动能量
 
@@ -90,19 +90,19 @@ class StateNode:
 
     def reshape_action(self):  # 重整动作
         if self.step <= 0.1 * self.max_step:
-            self.action = (self.action + 1) / 2
+            self.action = (self.action + 0.03) / 2
         elif self.max_step - self.step <= 0.1 * self.max_step:
             self.action = (self.action - 1) / 1
         else:
             self.action = self.action
-        low_bound = -1
-        upper_bound = 1
+        low_bound = -1.5
+        upper_bound = 1.5
         # 重整当前动作
-        self.action = low_bound + (self.action + 1.0) * 0.5 * (upper_bound - low_bound)
+        # self.action = low_bound + (self.action + 1.0) * 0.5 * (upper_bound - low_bound)
         self.action = np.clip(self.action, low_bound, upper_bound)
         # 重整上一个节点的动作，这句话好像可以不要
-        self.last_node_action = low_bound + (self.last_node_action + 1.0) * 0.5 * (upper_bound - low_bound)
-        self.last_node_action = np.clip(self.last_node_action, low_bound, upper_bound)
+        # self.last_node_action = low_bound + (self.last_node_action + 1.0) * 0.5 * (upper_bound - low_bound)
+        # self.last_node_action = np.clip(self.last_node_action, low_bound, upper_bound)
 
     # 下面是合加速度的计算过程
     def get_gradient_acc(self):  # 获取当前位置坡度加速度
@@ -196,10 +196,10 @@ class StateNode:
         limit_speed = self.line.speed_limit[key]
         if self.state[1] * 3.6 >= min(limit_speed, self.ATP_limit):  # 超速
             self.speed_punish = 1
-            self.current_limit_speed = min(limit_speed, self.ATP_limit)
+            self.current_limit_speed = min(limit_speed / 3.6, self.ATP_limit / 3.6)
         else:
             self.speed_punish = 0
-            self.current_limit_speed = min(limit_speed, self.ATP_limit)
+            self.current_limit_speed = min(limit_speed / 3.6, self.ATP_limit / 3.6)
 
     def speed_check2(self):
         key_list = []
@@ -238,6 +238,8 @@ class StateNode:
         time = time + temp_time
         self.next_state[0] = time  # 状态转移后的时间
         self.next_state[1] = velocity  # 状态转移后的速度
+        self.next_state[2] = self.acc  # 用什么样的加速度达到下状态（上一个动作产生的加速度）
+        self.next_state[3] = (self.step + 1) * self.line.delta_distance  # 下状态所处的位置
         # self.next_state[2] = self.acc
 
     # 下面是完整的一般状态转移过程
@@ -290,7 +292,7 @@ class StateNode:
         initial_velocity = self.state[1].copy()
         while chaosu_flag != 1:
             xunhuan_count += 1
-            if xunhuan_count > 40:
+            if xunhuan_count > 100:
                 temp_acc = self.acc - self.g_acc - self.c_acc
                 if temp_acc >= 0:
                     self.action = temp_acc * self.train_model.weight / self.train_model.max_traction_force
@@ -316,11 +318,11 @@ class StateNode:
                 if xunhuan_count == 1:
                     if self.acc > 0:
                         # self.acc = self.acc - 0.2
-                        self.acc = self.acc - 0.15 * (velocity / self.current_limit_speed)
+                        self.acc = self.acc - 0.2 * (velocity / self.current_limit_speed)
                     else:
-                        self.acc = self.acc - 0.15 * (velocity / self.current_limit_speed)
+                        self.acc = self.acc - 0.2 * (velocity / self.current_limit_speed)
                 else:
-                    self.acc = self.acc - 0.15 * (velocity / self.current_limit_speed)
+                    self.acc = self.acc - 0.2 * (velocity / self.current_limit_speed)
             else:
                 chaosu_flag = 1
                 temp_acc = self.acc - self.g_acc - self.c_acc
@@ -328,9 +330,9 @@ class StateNode:
                     self.action = temp_acc * self.train_model.weight / self.train_model.max_traction_force
                 else:
                     self.action = temp_acc * self.train_model.weight / self.train_model.max_brake_force
-                if self.action > 1:
+                if self.action > 1.5:
                     self.action = np.array(1).reshape(1)
-                if self.action < -1:
+                if self.action < -1.5:
                     self.action = np.array(-1).reshape(1)
         self.state[1] = initial_velocity
 
