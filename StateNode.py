@@ -86,12 +86,12 @@ class StateNode:
         length = final_locate - self.step
         if limit_speed_next < limit_speed:
             self.ATP_limit = np.sqrt(
-                limit_speed_next * limit_speed_next / 3.6 / 3.6 - 2 * self.train_model.max_bra_acc * length * self.line.delta_distance) * 3.6
+                limit_speed_next * limit_speed_next / 3.6 / 3.6 - 2 * 0.5 * self.train_model.max_bra_acc * length * self.line.delta_distance) * 3.6
 
     def reshape_action(self):  # 重整动作
         if self.step <= 0.1 * self.max_step:
             self.action = (self.action + 0.03) / 2
-        elif self.max_step - self.step <= 0.1 * self.max_step:
+        elif self.max_step - self.step <= 0.15 * self.max_step:
             self.action = (self.action - 1) / 1
         else:
             self.action = self.action
@@ -136,12 +136,12 @@ class StateNode:
     def get_current_tra_acc(self):  # 计算当前牵引加速度
         # self.train_model.get_max_traction_force(self.state[1] * 3.6)  # 当前车辆的最大牵引力
         tra_force = self.train_model.max_traction_force * self.action  # 当前输出的牵引力
-        self.tm_acc = tra_force / self.train_model.weight
+        self.tm_acc = 1.5 * tra_force / self.train_model.weight
 
     def get_current_b_acc(self):  # 计算当前制动加速度
         # self.train_model.get_max_brake_force(self.state[1] * 3.6)
         bra_force = self.train_model.max_brake_force * abs(self.action)  # 单位是kN
-        self.bm_acc = - bra_force / self.train_model.weight
+        self.bm_acc = - 1.5 * bra_force / self.train_model.weight
 
     def get_m_acc(self):  # 判断当前是制动还是牵引
         self.train_model.get_max_traction_force(self.state[1] * 3.6)  # 当前车辆的最大牵引力
@@ -239,7 +239,7 @@ class StateNode:
         self.next_state[0] = time  # 状态转移后的时间
         self.next_state[1] = velocity  # 状态转移后的速度
         self.next_state[2] = self.acc  # 用什么样的加速度达到下状态（上一个动作产生的加速度）
-        self.next_state[3] = (self.step + 1) * self.line.delta_distance  # 下状态所处的位置
+        self.next_state[3] = (self.step + 1) * self.line.delta_distance  # 下状态所处的位置，对于当前的状态就是当前位置
         # self.next_state[2] = self.acc
 
     # 下面是完整的一般状态转移过程

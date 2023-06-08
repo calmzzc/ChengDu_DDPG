@@ -346,11 +346,32 @@ class Section16:
         self.ac_power = 34.3
 
 
+class Section17:
+    def __init__(self):
+        self.start_station = '''WuXiDong'''
+        self.end_station = '''SuZhouBei'''
+        self.length = 25500
+        self.delta_distance = 250
+        # self.max_iteration = self.length / self.delta_distance
+        self.scheduled_time = 720
+        self.speed_limit = {
+            0: 100, 2000: 350, 15000: 300, 17000: 350, 24000: 180, 25500: 0
+        }
+        self.gradient = {
+            0: 7, 900: 0, 2462: -5, 3762: 0, 5312: 2, 10212: 0, 11562: 2, 12912: -4, 14012: 4, 16612: 0, 17612: -4, 20112: 2, 24512: -1
+        }
+        self.curve = {0: 0}
+        self.direction = "XiaXing"
+        self.tra_power = 819.89
+        self.re_power = 0
+        self.ac_power = 819.89
+
+
 Section = {"Section1": Section1(), "Section2": Section2(), "Section3": Section3(), "Section4": Section4(),
            "Section5": Section5(), "Section6": Section6(), "Section7": Section7(), "Section8": Section8(),
            "Section9": Section9(), "Section10": Section10(), "Section11": Section11(), "Section12": Section12(),
            "Section13": Section13(), "Section14": Section14(), "Section15": Section15(),
-           "Section16": Section16()}
+           "Section16": Section16(), "Section17": Section17()}
 SectionS = {"Section1": Section1(), "Section2": Section2(), "Section3": Section3(), "Section4": Section4(),
             "Section5": Section5(), "Section6": Section6(), "Section7": Section7(), "Section8": Section8()}
 SectionX = {"Section9": Section9(), "Section10": Section10(), "Section11": Section11(), "Section12": Section12(),

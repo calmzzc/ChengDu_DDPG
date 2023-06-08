@@ -177,6 +177,9 @@ def evalplot_speed(total_v_list, total_t_list, total_a_list, total_acc_list, lim
     if save:
         plt.savefig(path + f"{tag}_action_cn")
     plt.figure(dpi=150)
+    serise2 = Series(total_acc_list[1])
+    value2 = serise.values.reshape(len(serise2), 1)
+    total_acc_list[1] = MinMaxScaler(feature_range=(-0.8, 0.8)).fit_transform(value2)
     plt.plot(total_acc_list[1])
     plt.legend((u'加速度曲线',), loc='best', prop=chinese_font())
     if save:

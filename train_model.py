@@ -62,3 +62,75 @@ class Train:
 
     def get_re_power(self, ave_v, delta_t, action):  # 速度单位为km/h，时间单位为s，action为算法输出的百分比
         return self.max_brake_force * (action / 1) * (ave_v / 3.6) * (delta_t / 3600) * (self.n1_b * self.n2 * self.n3 * self.n4)
+
+
+class HighSpeedTrain:
+    def __init__(self):
+        self.weight = 483  # 车重（吨）
+        # 戴维斯参数
+        self.a = 3.42
+        self.b = 0.0237
+        self.c = 0.00107
+
+        # 效率参数
+        self.n1 = 0  # 牵引电机效率
+        self.n1_b = 0  # 制动电机效率
+        self.n2 = 0.9702  # 变压器效率
+        self.n3 = 0.96  # 变流器效率
+        self.n4 = 0.97  # 齿轮箱效率
+
+        # 最大牵引力最大制动力
+        self.max_traction_force = 0
+        self.max_brake_force = 0
+
+        # 最大加速度最大减速度
+        self.max_trac_acc = 0.8
+        self.max_bra_acc = -0.8
+
+    def get_max_traction_force(self, cur_v):  # 速度单位为km/h，用当前速度
+        self.get_n1(cur_v)
+        if 0 <= cur_v <= 50:
+            self.max_traction_force = 255.992
+        elif 51 <= cur_v <= 160:
+            self.max_traction_force = -0.3329 * cur_v + 272.6
+        else:
+            self.max_traction_force = 35100 / cur_v
+
+    def get_max_brake_force(self, cur_v):  # 速度单位为km/h
+        self.get_n1_b(cur_v)
+        if 0 <= cur_v <= 5:
+            self.max_brake_force = 270.0307
+        elif 6 <= cur_v <= 19:
+            self.max_brake_force = 7.692 * cur_v + 231.6
+        elif 20 <= cur_v <= 160:
+            self.max_brake_force = 385.4161
+        elif 161 <= cur_v <= 239:
+            self.max_brake_force = -1.987 * cur_v + 703.3
+        else:
+            self.max_brake_force = -0.7128 * cur_v + 398.8
+
+        # 计算牵引电机效率
+
+    def get_n1(self, cur_v):  # 速度单位为km/h
+        if 0 <= cur_v <= 130:
+            self.n1 = -0.8028 * np.exp(-0.067 * cur_v) + 0.9409
+        else:
+            self.n1 = 0.94
+        # 计算制动电机效率
+
+    def get_n1_b(self, cur_v):  # 速度单位为km/h
+        if 0 <= cur_v <= 140:
+            self.n1_b = -0.8837 * np.exp(-0.0585 * cur_v) + 0.9245
+        else:
+            self.n1_b = 0.95
+
+        # 计算牵引能耗和再生制动能耗
+
+    def get_traction_power(self, ave_v, delta_t, action):  # 速度单位为km/h，用平均速度，时间单位为s，action为算法输出的百分比
+        return self.max_traction_force * (action / 1) * (ave_v / 3.6) * (delta_t / 3600) / (self.n1 * self.n2 * self.n3 * self.n4)
+
+    def get_re_power(self, ave_v, delta_t, action):  # 速度单位为km/h，时间单位为s，action为算法输出的百分比
+        if ave_v <= 1:
+            return 0
+        else:
+            return self.max_brake_force * (action / 1) * (ave_v / 3.6) * (delta_t / 3600) * (self.n1_b * self.n2 * self.n3 * self.n4)

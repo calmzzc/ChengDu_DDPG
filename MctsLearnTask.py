@@ -29,10 +29,10 @@ curr_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")  # 获取当前时
 class DDPGConfig:
     def __init__(self):
         self.algo = 'DDPG_CD'  # 算法名称
-        self.env = "Section13"  # 环境名称
+        self.env = "Section1"  # 环境名称
         self.train_eps = 500  # 训练的回合数
         self.max_step = 500  # 每回合最多步数
-        self.eval_eps = 500  # 测试的回合数
+        self.eval_eps = 10  # 测试的回合数
         self.gamma = 0.99  # 折扣因子
         self.critic_lr = 1e-3  # 评论家网络的学习率
         self.actor_lr = 1e-4  # 演员网络的学习率
@@ -43,7 +43,7 @@ class DDPGConfig:
         self.update_every = 15
         self.shield = 1
         if self.shield:
-            self.algo_n = "Shield"
+            self.algo_n = "Shield_Mcts"
         else:
             self.algo_n = "no_Shield"
         self.result_path = curr_path + "/outputs/" + str(self.actor_lr) + '/' + self.algo_n + '/' + self.env + '/' + curr_time + '/results/'  # path to save results
@@ -113,15 +113,15 @@ def train(cfg, line, agent, train_model):
         total_power = 0
         t_power = 0
         re_power = 0
-        state_node = StateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model)
+        # state_node = StateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model)
         # Mcts要用下面这个
-        # state_node = MctsStateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
+        state_node = MctsStateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
         node_list.append(state_node)
         while True:
             i_step += 1
             state_node.get_last_node(node_list)
             if cfg.shield:
-                state_node.safe_state_transition()  # Shield动作转移
+                state_node.Mcts_State_Transition()  # Shield动作转移
             else:
                 state_node.state_transition()  # 一般动作转移
             # state_node.state_transition() # 一般动作转移
@@ -162,9 +162,9 @@ def train(cfg, line, agent, train_model):
                 break
 
             # 生成下一个新的节点
-            state_node = StateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model)
-            # Mcts要用下面这个
-            # state_node = MctsStateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
+            # state_node = StateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model)
+            #  Mcts要用下面这个
+            state_node = MctsStateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
             node_list.append(state_node)
         if (i_ep + 1) % 10 == 0:
             print('回合：{}/{}，奖励：{}, 能耗  {}, 牵引能耗  {}, 最终时间  {}, 最终速度  {}, 不安全次数  {}, 最终位置 {}'.format(i_ep + 1,
@@ -244,16 +244,16 @@ def eval(cfg, line, agent, train_model):
         total_power = 0
         t_power = 0
         re_power = 0
-        state_node = StateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model)
+        # state_node = StateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model)
         # Mcts要用下面这个
-        # state_node = MctsStateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
+        state_node = MctsStateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
         node_list.append(state_node)
         cal_time_start = time.time()
         while True:
             i_step += 1
             state_node.get_last_node(node_list)
             if cfg.shield:
-                state_node.safe_state_transition()  # Shield动作转移
+                state_node.Mcts_State_Transition_eval()  # Shield动作转移
             else:
                 state_node.state_transition()  # 一般动作转移
             # state_node.state_transition() # 一般动作转移
@@ -281,10 +281,10 @@ def eval(cfg, line, agent, train_model):
                 a_list.clear()
                 acc_list.clear()
                 break
-            # 生成下一个新的节点
-            state_node = StateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model)
-            # Mcts要用下面这个
-            # state_node = MctsStateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
+            # # 生成下一个新的节点
+            # state_node = StateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model)
+            # # Mcts要用下面这个
+            state_node = MctsStateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
             node_list.append(state_node)
         print('回合：{}/{}，奖励：{}, 能耗  {}, 牵引能耗  {}, 最终时间  {}, 最终速度  {}, 不安全次数  {}, 最终位置 {}'.format(i_ep + 1,
                                                                                                 cfg.train_eps,
@@ -333,7 +333,7 @@ if __name__ == "__main__":
     save_results(t_rewards, t_ma_rewards, tag='train', path=cfg.result_path)
 
     # 测试
-    line, agent, train_mdoel = env_agent_config(cfg, seed=3)
+    line, agent, train_model = env_agent_config(cfg, seed=3)
     agent.load(path=cfg.model_path)
     eval_time_start = time.time()
     rewards, ma_rewards, ev_list, et_list, ea_list, eval_ep_list, eacc_list, cal_list = eval(cfg, line, agent,
