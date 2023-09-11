@@ -29,10 +29,10 @@ curr_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")  # 获取当前时
 class DDPGConfig:
     def __init__(self):
         self.algo = 'DDPG_CD'  # 算法名称
-        self.env = "Section13"  # 环境名称
-        self.train_eps = 500  # 训练的回合数
+        self.env = "Section1"  # 环境名称
+        self.train_eps = 1100  # 训练的回合数
         self.max_step = 500  # 每回合最多步数
-        self.eval_eps = 500  # 测试的回合数
+        self.eval_eps = 100  # 测试的回合数
         self.gamma = 0.99  # 折扣因子
         self.critic_lr = 1e-3  # 评论家网络的学习率
         self.actor_lr = 1e-4  # 演员网络的学习率
@@ -168,25 +168,25 @@ def train(cfg, line, agent, train_model):
             node_list.append(state_node)
         if (i_ep + 1) % 10 == 0:
             print('回合：{}/{}，奖励：{}, 能耗  {}, 牵引能耗  {}, 最终时间  {}, 最终速度  {}, 不安全次数  {}, 最终位置 {}'.format(i_ep + 1,
-                                                                                                    cfg.train_eps,
-                                                                                                    np.around(
-                                                                                                        ep_reward[0],
-                                                                                                        2),
-                                                                                                    np.around(
-                                                                                                        total_power[0],
-                                                                                                        4), np.around(
+                                                                                                                               cfg.train_eps,
+                                                                                                                               np.around(
+                                                                                                                                   ep_reward[0],
+                                                                                                                                   2),
+                                                                                                                               np.around(
+                                                                                                                                   total_power[0],
+                                                                                                                                   4), np.around(
                     t_power[0], 4),
-                                                                                                    np.around(
-                                                                                                        state_node.next_state[
-                                                                                                            0],
-                                                                                                        2), np.
-                                                                                                    around(
+                                                                                                                               np.around(
+                                                                                                                                   state_node.next_state[
+                                                                                                                                       0],
+                                                                                                                                   2), np.
+                                                                                                                               around(
                     state_node.next_state[1], 2),
 
-                                                                                                    np.round(
-                                                                                                        ep_unsafe_counts,
-                                                                                                        0),
-                                                                                                    state_node.step))
+                                                                                                                               np.round(
+                                                                                                                                   ep_unsafe_counts,
+                                                                                                                                   0),
+                                                                                                                               state_node.step))
         rewards.append(ep_reward)
         unsafe_counts.append(ep_unsafe_counts)
         if ma_unsafe_counts:
@@ -270,7 +270,7 @@ def eval(cfg, line, agent, train_model):
             acc_list.append(state_node.acc.copy())
             if done:
                 cal_time_end = time.time()
-                cal_time = cal_time_end - cal_time_start
+                cal_time = (cal_time_end - cal_time_start) / (line.length / line.delta_distance)
                 cal_list.append(cal_time)
                 total_t_list.append(t_list.copy())
                 total_v_list.append(v_list.copy())
@@ -287,25 +287,25 @@ def eval(cfg, line, agent, train_model):
             # state_node = MctsStateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
             node_list.append(state_node)
         print('回合：{}/{}，奖励：{}, 能耗  {}, 牵引能耗  {}, 最终时间  {}, 最终速度  {}, 不安全次数  {}, 最终位置 {}'.format(i_ep + 1,
-                                                                                                cfg.train_eps,
-                                                                                                np.around(ep_reward[0],
-                                                                                                          2),
-                                                                                                np.around(
-                                                                                                    total_power[0],
-                                                                                                    4),
-                                                                                                np.around(t_power[0],
-                                                                                                          4),
-                                                                                                np.around(
-                                                                                                    state_node.next_state[
-                                                                                                        0],
-                                                                                                    2), np.
-                                                                                                around(
+                                                                                                                           cfg.train_eps,
+                                                                                                                           np.around(ep_reward[0],
+                                                                                                                                     2),
+                                                                                                                           np.around(
+                                                                                                                               total_power[0],
+                                                                                                                               4),
+                                                                                                                           np.around(t_power[0],
+                                                                                                                                     4),
+                                                                                                                           np.around(
+                                                                                                                               state_node.next_state[
+                                                                                                                                   0],
+                                                                                                                               2), np.
+                                                                                                                           around(
                 state_node.next_state[1], 2),
 
-                                                                                                np.round(
-                                                                                                    ep_unsafe_counts,
-                                                                                                    0),
-                                                                                                state_node.step))
+                                                                                                                           np.round(
+                                                                                                                               ep_unsafe_counts,
+                                                                                                                               0),
+                                                                                                                           state_node.step))
         rewards.append(ep_reward)
         unsafe_counts.append(ep_unsafe_counts)
         if ma_unsafe_counts:

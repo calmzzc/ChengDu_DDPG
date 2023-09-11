@@ -30,7 +30,7 @@ class DDPGConfig:
     def __init__(self):
         self.algo = 'DDPG_CD'  # 算法名称
         self.env = "Section1"  # 环境名称
-        self.train_eps = 500  # 训练的回合数
+        self.train_eps = 1100  # 训练的回合数
         self.max_step = 500  # 每回合最多步数
         self.eval_eps = 10  # 测试的回合数
         self.gamma = 0.99  # 折扣因子
@@ -168,25 +168,25 @@ def train(cfg, line, agent, train_model):
             node_list.append(state_node)
         if (i_ep + 1) % 10 == 0:
             print('回合：{}/{}，奖励：{}, 能耗  {}, 牵引能耗  {}, 最终时间  {}, 最终速度  {}, 不安全次数  {}, 最终位置 {}'.format(i_ep + 1,
-                                                                                                    cfg.train_eps,
-                                                                                                    np.around(
-                                                                                                        ep_reward[0],
-                                                                                                        2),
-                                                                                                    np.around(
-                                                                                                        total_power[0],
-                                                                                                        4), np.around(
+                                                                                                                               cfg.train_eps,
+                                                                                                                               np.around(
+                                                                                                                                   ep_reward[0],
+                                                                                                                                   2),
+                                                                                                                               np.around(
+                                                                                                                                   total_power[0],
+                                                                                                                                   4), np.around(
                     t_power[0], 4),
-                                                                                                    np.around(
-                                                                                                        state_node.next_state[
-                                                                                                            0],
-                                                                                                        2), np.
-                                                                                                    around(
+                                                                                                                               np.around(
+                                                                                                                                   state_node.next_state[
+                                                                                                                                       0],
+                                                                                                                                   2), np.
+                                                                                                                               around(
                     state_node.next_state[1], 2),
 
-                                                                                                    np.round(
-                                                                                                        ep_unsafe_counts,
-                                                                                                        0),
-                                                                                                    state_node.step))
+                                                                                                                               np.round(
+                                                                                                                                   ep_unsafe_counts,
+                                                                                                                                   0),
+                                                                                                                               state_node.step))
         rewards.append(ep_reward)
         unsafe_counts.append(ep_unsafe_counts)
         if ma_unsafe_counts:
@@ -270,7 +270,7 @@ def eval(cfg, line, agent, train_model):
             acc_list.append(state_node.acc.copy())
             if done:
                 cal_time_end = time.time()
-                cal_time = cal_time_end - cal_time_start
+                cal_time = (cal_time_end - cal_time_start) / (line.length / line.delta_distance)
                 cal_list.append(cal_time)
                 total_t_list.append(t_list.copy())
                 total_v_list.append(v_list.copy())
@@ -287,25 +287,25 @@ def eval(cfg, line, agent, train_model):
             state_node = MctsStateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
             node_list.append(state_node)
         print('回合：{}/{}，奖励：{}, 能耗  {}, 牵引能耗  {}, 最终时间  {}, 最终速度  {}, 不安全次数  {}, 最终位置 {}'.format(i_ep + 1,
-                                                                                                cfg.train_eps,
-                                                                                                np.around(ep_reward[0],
-                                                                                                          2),
-                                                                                                np.around(
-                                                                                                    total_power[0],
-                                                                                                    4),
-                                                                                                np.around(t_power[0],
-                                                                                                          4),
-                                                                                                np.around(
-                                                                                                    state_node.next_state[
-                                                                                                        0],
-                                                                                                    2), np.
-                                                                                                around(
+                                                                                                                           cfg.train_eps,
+                                                                                                                           np.around(ep_reward[0],
+                                                                                                                                     2),
+                                                                                                                           np.around(
+                                                                                                                               total_power[0],
+                                                                                                                               4),
+                                                                                                                           np.around(t_power[0],
+                                                                                                                                     4),
+                                                                                                                           np.around(
+                                                                                                                               state_node.next_state[
+                                                                                                                                   0],
+                                                                                                                               2), np.
+                                                                                                                           around(
                 state_node.next_state[1], 2),
 
-                                                                                                np.round(
-                                                                                                    ep_unsafe_counts,
-                                                                                                    0),
-                                                                                                state_node.step))
+                                                                                                                           np.round(
+                                                                                                                               ep_unsafe_counts,
+                                                                                                                               0),
+                                                                                                                           state_node.step))
         rewards.append(ep_reward)
         unsafe_counts.append(ep_unsafe_counts)
         if ma_unsafe_counts:
@@ -322,7 +322,7 @@ def eval(cfg, line, agent, train_model):
 
 if __name__ == "__main__":
     cfg = DDPGConfig()
-    line, agent, train_model = env_agent_config(cfg, seed=3)
+    line, agent, train_model = env_agent_config(cfg, seed=4)
     train_time_start = time.time()
     t_rewards, t_ma_rewards, v_list, t_list, a_list, ep_list, power_list, ma_power_list, unsafe_c, ma_unsafe_c, acc_list, total_t_power_list, total_re_power_list, limit_list, A_limit_list, slope_list = train(
         cfg, line, agent, train_model)
@@ -333,7 +333,8 @@ if __name__ == "__main__":
     save_results(t_rewards, t_ma_rewards, tag='train', path=cfg.result_path)
 
     # 测试
-    line, agent, train_model = env_agent_config(cfg, seed=3)
+    # cfg.env = "Section1"
+    line, agent, train_model = env_agent_config(cfg, seed=4)
     agent.load(path=cfg.model_path)
     eval_time_start = time.time()
     rewards, ma_rewards, ev_list, et_list, ea_list, eval_ep_list, eacc_list, cal_list = eval(cfg, line, agent,

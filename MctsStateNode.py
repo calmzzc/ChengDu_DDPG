@@ -139,13 +139,13 @@ class MctsStateNode:
     def simulate(self):
         self.get_ATP_limit()
         # self.get_next_max_speed()
-        # 在simulate前已经将action传进来了
-        # self.get_action()
+        # 根节点时要重新选择动作
+        self.get_action()  # 可以把这一步理解为一个宽度为1的expansion
         self.reshape_action()
         self.get_acc()
         if self.Shield_Check():
             t = self
-            while t._parent is not None:
+            while t._parent is not None:  # 往上推删除节点
                 t.destroy_flag = 1
                 t = t._parent
         else:
@@ -154,7 +154,8 @@ class MctsStateNode:
             self.get_simulate_reward()
             self.get_next_state()
             self.next_simulate_node = MctsStateNode(self.next_state.copy(), self.step + 1, self.line, self.agent, self.episode, self.ou_noise, self.train_flag, self.train_model, parent=self)
-            self.next_simulate_node.get_action()
+            # 这里不需要先生成动作，在simulate里面重新生成即可
+            # self.next_simulate_node.get_action()
             # self.next_simulate_node.current_reward = self.current_reward
             # self.current_reward = temp_reward
             if self.next_simulate_node.step % 5 != 0 and self.next_simulate_node.step <= self.max_step:
@@ -162,7 +163,7 @@ class MctsStateNode:
             else:
                 self.simulate_return()
 
-    def Mcts_do(self):
+    def Mcts_do(self):  # 进行演绎
         self.get_simulate_depth()
         for i in range(self.simulate_depth):
             self.simulate()
@@ -184,21 +185,25 @@ class MctsStateNode:
         temp_reward_dict = {}
         temp_node_dict = {}
         MctsNode = MctsStateNode(self.state, self.step, self.line, self.agent, self.episode, self.ou_noise, self.train_flag, self.train_model, parent=None)
-        MctsNode.expand()
+        action_dict = MctsNode.expand()
         for i in range(len(MctsNode._children)):
-            MctsNode._selected_children = MctsNode._children.get(i)
+            MctsNode._selected_children = MctsNode._children.get(i)  # 从每个根节点开始进行演绎，根节点根据自己的状态选择动作
             MctsNode._selected_children.Mcts_do()
             if MctsNode._selected_children.destroy_flag:
                 del MctsNode._children[i]
+                del action_dict[i]
             else:
                 temp_reward_dict[i] = MctsNode._selected_children.current_reward
                 temp_node_dict[i] = MctsNode._selected_children
         if temp_reward_dict:
             temp_index = max(temp_reward_dict, key=(lambda k: temp_reward_dict[k]))
             temp_node = MctsNode._children.get(temp_index)
-            temp_action = temp_node.action
+            # temp_action = temp_node.action  # 这里现在应该对了，把expand时候的动作存到一个dict里，通过演绎找reward最大的action，让父节点用这个action
+            temp_action = action_dict.get(temp_index)
+            del MctsNode
             return temp_action
         else:
+            del MctsNode
             return None
 
         # if len(MctsNode._children) == 1:
@@ -260,17 +265,35 @@ class MctsStateNode:
             self.next_max_action = temp_acc * self.train_model.weight / self.train_model.max_traction_force
         else:
             self.next_max_action = temp_acc * self.train_model.weight / self.train_model.max_brake_force
-        if self.next_max_action > 1.5:
-            self.next_max_action = np.array(1.5).reshape(1)
-        if self.next_max_action < -1.5:
-            self.next_max_action = np.array(-1.5).reshape(1)
+        if self.next_max_action > 1:
+            self.next_max_action = np.array(1).reshape(1)
+        if self.next_max_action < -1:
+            self.next_max_action = np.array(-1).reshape(1)
 
     def expand(self):
+        action_dict = {}
         self.get_ATP_limit()
         self.get_next_max_speed()
         self.get_max_acc_index()
         if self.next_max_action >= 0:
-            for action in range(15 + int(abs(self.next_max_action) // 0.1)):
+            for action in range(10 + int(abs(self.next_max_action) // 0.1)):
+                if action not in self._children:
+                    temp_action = self.action
+                    self.action = self.next_max_action - 0.1 * action
+                    self.reshape_action()
+                    self.get_acc()
+                    self.get_next_state()  # 需要通过状态转移知道expand出多少个节点
+                    self.get_power()
+                    self.get_simulate_reward()  # 这里需要完整的写一下说明文档
+                    self._children[action] = MctsStateNode(self.next_state.copy(), self.step + 1, self.line, self.agent, self.episode, self.ou_noise, self.train_flag, self.train_model,
+                                                           parent=self)  # parent=self是对的，因为要从此处开始进行演绎，删节点删到这个位置为止
+                    self._children[action].current_reward = self.current_reward
+                    action_dict[action] = self.action
+                    # 这里不应该对动作进行赋值了，因为要从_children[action]开始演绎，所以需要令其根据agent自己生成动作，而不是把父节点的动作给他
+                    #  self._children[action].action = self.action
+                    self.action = temp_action
+        else:
+            for action in range(10 - int(abs(self.next_max_action) // 0.1)):
                 if action not in self._children:
                     temp_action = self.action
                     self.action = self.next_max_action - 0.1 * action
@@ -279,23 +302,12 @@ class MctsStateNode:
                     self.get_next_state()
                     self.get_power()
                     self.get_simulate_reward()
-                    self._children[action] = MctsStateNode(self.next_state.copy(), self.step + 1, self.line, self.agent, self.episode, self.ou_noise, self.train_flag, self.train_model, parent=None)
-                    self._children[action].current_reward = self.current_reward
-                    self._children[action].action = self.action
-                    self.action = temp_action
-        else:
-            for action in range(15 - int(abs(self.next_max_action) // 0.1)):
-                if action not in self._children:
-                    temp_action = self.action
-                    self.action = self.next_max_action - 0.1 * action
-                    self.reshape_action()
-                    self.get_acc()
-                    self.get_next_state()
-                    self.get_power()
                     self._children[action] = MctsStateNode(self.next_state.copy(), self.step + 1, self.line, self.agent, self.episode, self.ou_noise, self.train_flag, self.train_model, parent=self)
                     self._children[action].current_reward = self.current_reward
-                    self._children[action].action = self.action
+                    action_dict[action] = self.action
+                    # self._children[action].action = self.action
                     self.action = temp_action
+        return action_dict
 
     def get_simulate_reward(self):
         self.speed_check()
@@ -386,17 +398,27 @@ class MctsStateNode:
                 limit_speed_next * limit_speed_next / 3.6 / 3.6 - 2 * 0.5 * self.train_model.max_bra_acc * length * self.line.delta_distance) * 3.6
 
     def reshape_action(self):  # 重整动作
-        if self.step <= 0.1 * self.max_step:
+        # if self.last_node_action >= 0:
+        #     self.action = min(self.action, self.last_node_action + 0.3)
+        # else:
+        #     self.action = max(self.action, self.last_node_action - 0.3)
+        if self.step <= 0.001 * self.max_step:
             self.action = (self.action + 0.03) / 2
-        elif self.max_step - self.step <= 0.15 * self.max_step:
+        elif self.max_step - self.step <= 0.0015 * self.max_step:
             self.action = (self.action - 1) / 1
         else:
             self.action = self.action
-        low_bound = -1.5
-        upper_bound = 1.5
+            # if abs(self.last_node_action):
+            #     self.action = np.clip(self.action, self.last_node_action - 0.3, self.last_node_action + 0.3)
+        low_bound = -1
+        upper_bound = 1
+        self.action = np.clip(self.action, low_bound, upper_bound)
         # 重整当前动作
         # self.action = low_bound + (self.action + 1.0) * 0.5 * (upper_bound - low_bound)
-        self.action = np.clip(self.action, low_bound, upper_bound)
+        # if abs(self.last_node_action):
+        #     self.action = np.clip(self.action, self.last_node_action - 0.3, self.last_node_action + 0.3)
+        # else:
+        #     self.action = np.clip(self.action, low_bound, upper_bound)
         # 重整上一个节点的动作，这句话好像可以不要
         # self.last_node_action = low_bound + (self.last_node_action + 1.0) * 0.5 * (upper_bound - low_bound)
         # self.last_node_action = np.clip(self.last_node_action, low_bound, upper_bound)
@@ -455,10 +477,10 @@ class MctsStateNode:
         self.get_gradient_acc()
         self.get_curve_acc()
         self.acc = self.tm_acc + self.bm_acc + self.g_acc + self.c_acc
-        if self.acc > 1.5:
-            self.acc = np.array(1.5).reshape(1)
-        if self.acc < -1.5:
-            self.acc = np.array(-1.5).reshape(1)
+        if self.acc > 1.2:
+            self.acc = np.array(1.2).reshape(1)
+        if self.acc < -1.2:
+            self.acc = np.array(-1.2).reshape(1)
 
     # 下面是能耗的计算过程
     def get_ave_v(self):  # 获取平均速度
@@ -627,9 +649,9 @@ class MctsStateNode:
                     self.action = temp_acc * self.train_model.weight / self.train_model.max_traction_force
                 else:
                     self.action = temp_acc * self.train_model.weight / self.train_model.max_brake_force
-                if self.action > 1.5:
+                if self.action > 1:
                     self.action = np.array(1).reshape(1)
-                if self.action < -1.5:
+                if self.action < -1:
                     self.action = np.array(-1).reshape(1)
         self.state[1] = initial_velocity
 

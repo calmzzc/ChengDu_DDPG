@@ -6,7 +6,7 @@ class Section1:
         self.start_station = '''JiTouQiao'''  # 出发站
         self.end_station = '''BaiFuoQiao'''  # 到达站
         self.length = 1470  # 站间长度
-        self.delta_distance = 49  # 位置离散
+        self.delta_distance = 10  # 位置离散
         # self.max_iteration = self.length / self.delta_distance
         self.scheduled_time = 86  # 计划运行时间
         self.speed_limit = {  # 线路限速
@@ -27,7 +27,7 @@ class Section2:
         self.start_station = '''BaiFuoQiao'''
         self.end_station = '''JiuJiangBei'''
         self.length = 4180
-        self.delta_distance = 76
+        self.delta_distance = 10
         # self.max_iteration = self.length / self.delta_distance
         self.scheduled_time = 183.15
         self.speed_limit = {
@@ -49,7 +49,7 @@ class Section3:
         self.start_station = '''JiuJiangBei'''
         self.end_station = '''MingGuang'''
         self.length = 6640
-        self.delta_distance = 40
+        self.delta_distance = 10
         # self.max_iteration = self.length / self.delta_distance
         self.scheduled_time = 275.78
         self.speed_limit = {
@@ -351,7 +351,7 @@ class Section17:
         self.start_station = '''WuXiDong'''
         self.end_station = '''SuZhouBei'''
         self.length = 25500
-        self.delta_distance = 250
+        self.delta_distance = 100
         # self.max_iteration = self.length / self.delta_distance
         self.scheduled_time = 720
         self.speed_limit = {
@@ -367,11 +367,35 @@ class Section17:
         self.ac_power = 819.89
 
 
+class Section18:
+    def __init__(self):
+        self.start_station = '''BaoDingDong'''
+        self.end_station = '''ShiJiaZhuang'''
+        self.length = 142000
+        self.delta_distance = 500
+        # self.max_iteration = self.length / self.delta_distance
+        self.scheduled_time = 2100
+        self.speed_limit = {
+            0: 300, 140000: 100, 142000: 0
+        }
+        self.gradient = {
+            0: 0, 1250: 4, 2750: -1.5, 3950: -3.4, 4950: 0, 6250: 2.69, 8000: -3.1, 9750: 0.39, 10750: 12.71, 11750: -6, 13650: 0, 16550: 4.8, 17600: -2, 21000: 3, 22350: 2.4, 23550: -1, 25250: 0, 28450: 3.5,
+            29460: -3, 33500: 2.8, 34750: 0, 37250: 2.5, 38700: 2, 40550: -2, 41950: 1, 44050: -1, 45250: 3, 46549: -2.3, 47549: 3, 49249: 0, 59249: -2.5, 60549: 0, 62549: 5.4, 63549: 0, 64849: 6.6, 66099: -12,
+            67099: 0, 71549: 4, 72649: -5, 73649: 0, 77349: 3, 78899: 0, 83849: 2.8, 86499: 0, 87949: -4.7, 89149: 0, 91189: 2.2, 92949: -4.4, 93949: 3, 96299: 0, 102049: 4, 103729: -2, 104949: 2, 108849: 4.8,
+            110149: 0, 111949: -3.5, 113349: 0, 116849: 15, 117849: -12, 118999: 0, 121699: -3, 122699: 0, 129829: 9, 131219: -4, 133549: -11, 134508: -15, 135918: 2, 137348: -2, 139148: 15, 140448: 0
+        }
+        self.curve = {0: 0, 7140: 8000, 9000: 0, 12700: 10000, 15700: 0, 22000: 12000, 23000: 0}
+        self.direction = "XiaXing"
+        self.tra_power = 2376.701
+        self.re_power = 255.8976
+        self.ac_power = 2120.8034
+
+
 Section = {"Section1": Section1(), "Section2": Section2(), "Section3": Section3(), "Section4": Section4(),
            "Section5": Section5(), "Section6": Section6(), "Section7": Section7(), "Section8": Section8(),
            "Section9": Section9(), "Section10": Section10(), "Section11": Section11(), "Section12": Section12(),
            "Section13": Section13(), "Section14": Section14(), "Section15": Section15(),
-           "Section16": Section16(), "Section17": Section17()}
+           "Section16": Section16(), "Section17": Section17(), "Section18": Section18()}
 SectionS = {"Section1": Section1(), "Section2": Section2(), "Section3": Section3(), "Section4": Section4(),
             "Section5": Section5(), "Section6": Section6(), "Section7": Section7(), "Section8": Section8()}
 SectionX = {"Section9": Section9(), "Section10": Section10(), "Section11": Section11(), "Section12": Section12(),
