@@ -12,6 +12,7 @@ Environment:
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.font_manager import FontProperties
+from scipy.interpolate import interp1d
 import numpy as np
 import matplotlib as mpl
 from matplotlib.ticker import FuncFormatter
@@ -172,7 +173,14 @@ def evalplot_speed(total_v_list, total_t_list, total_a_list, total_acc_list, lim
     serise = Series(total_a_list[1])
     value = serise.values.reshape(len(serise), 1)
     total_a_list[1] = MinMaxScaler(feature_range=(-1, 1)).fit_transform(value)
-    plt.plot(total_a_list[1])
+    # index_list = np.linspace(0, len(total_a_list[1]) - 1, num=len(total_a_list[1]), endpoint=True)
+    # index_list = index_list * 40
+    # templist = total_a_list[1].reshape(-1)
+    # f = interp1d(index_list, templist)
+    # xnew = np.linspace(0, 4240, num=4241, endpoint=True)
+    # ynew = f(xnew)
+    # plt.plot(index_list, templist, 'o', xnew, ynew, '-')
+    plt.plot(total_acc_list[1])
     plt.legend((u'动作曲线',), loc='best', prop=chinese_font())
     if save:
         plt.savefig(path + f"{tag}_action_cn")

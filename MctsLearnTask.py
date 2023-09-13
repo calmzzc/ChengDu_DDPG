@@ -29,7 +29,7 @@ curr_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")  # 获取当前时
 class DDPGConfig:
     def __init__(self):
         self.algo = 'DDPG_CD'  # 算法名称
-        self.env = "Section1"  # 环境名称
+        self.env = "Section15"  # 环境名称
         self.train_eps = 1100  # 训练的回合数
         self.max_step = 500  # 每回合最多步数
         self.eval_eps = 10  # 测试的回合数
@@ -117,11 +117,15 @@ def train(cfg, line, agent, train_model):
         # Mcts要用下面这个
         state_node = MctsStateNode(state, 0, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
         node_list.append(state_node)
+        train_start_time = time.time()
         while True:
             i_step += 1
             state_node.get_last_node(node_list)
             if cfg.shield:
+                TRANS_START_TIME = time.time()
                 state_node.Mcts_State_Transition()  # Shield动作转移
+                TRANS_END_TIME = time.time()
+                TRANS_TIME = TRANS_END_TIME - TRANS_START_TIME
             else:
                 state_node.state_transition()  # 一般动作转移
             # state_node.state_transition() # 一般动作转移
@@ -146,9 +150,13 @@ def train(cfg, line, agent, train_model):
 
             # 更新神经网络
             if i_ep > 100 and i_step % 5 == 0:
+                update_start_time = time.time()
                 agent.update()
-
+                update_end_time = time.time()
+                update_time = update_end_time - update_start_time
             if done:
+                train_end_time = time.time()
+                train_time = train_end_time - train_start_time
                 total_t_list.append(t_list.copy())
                 total_v_list.append(v_list.copy())
                 total_a_list.append(a_list.copy())
@@ -322,7 +330,7 @@ def eval(cfg, line, agent, train_model):
 
 if __name__ == "__main__":
     cfg = DDPGConfig()
-    line, agent, train_model = env_agent_config(cfg, seed=4)
+    line, agent, train_model = env_agent_config(cfg, seed=6)  # 这个seed效果还可以
     train_time_start = time.time()
     t_rewards, t_ma_rewards, v_list, t_list, a_list, ep_list, power_list, ma_power_list, unsafe_c, ma_unsafe_c, acc_list, total_t_power_list, total_re_power_list, limit_list, A_limit_list, slope_list = train(
         cfg, line, agent, train_model)
@@ -334,7 +342,7 @@ if __name__ == "__main__":
 
     # 测试
     # cfg.env = "Section1"
-    line, agent, train_model = env_agent_config(cfg, seed=4)
+    line, agent, train_model = env_agent_config(cfg, seed=6)
     agent.load(path=cfg.model_path)
     eval_time_start = time.time()
     rewards, ma_rewards, ev_list, et_list, ea_list, eval_ep_list, eacc_list, cal_list = eval(cfg, line, agent,
