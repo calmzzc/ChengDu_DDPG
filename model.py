@@ -39,7 +39,6 @@ class Critic(nn.Module):
 
         self.linear1 = nn.Linear(n_obs + output_dim, hidden_size)
         self.linear2 = nn.Linear(hidden_size, hidden_size)
-        self.linear4 = nn.Linear(hidden_size, hidden_size)
         self.linear3 = nn.Linear(hidden_size, 1)
         # 随机初始化为较小的值
         self.linear3.weight.data.uniform_(-init_w, init_w)
@@ -50,7 +49,6 @@ class Critic(nn.Module):
         x = torch.cat([state, action], 1)
         x = F.relu(self.linear1(x))
         x = F.relu(self.linear2(x))
-        x = F.relu(self.linear4(x))
         x = self.linear3(x)
         return x
 
@@ -60,7 +58,6 @@ class Actor(nn.Module):
         super(Actor, self).__init__()
         self.linear1 = nn.Linear(n_obs, hidden_size)
         self.linear2 = nn.Linear(hidden_size, hidden_size)
-        self.linear4 = nn.Linear(hidden_size, hidden_size)
         self.linear3 = nn.Linear(hidden_size, output_dim)
 
         self.linear3.weight.data.uniform_(-init_w, init_w)
@@ -69,7 +66,6 @@ class Actor(nn.Module):
     def forward(self, x):
         x = F.relu(self.linear1(x))
         x = F.relu(self.linear2(x))
-        x = F.relu(self.linear4(x))
         x = torch.tanh(self.linear3(x))
         return x
 

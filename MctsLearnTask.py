@@ -29,8 +29,8 @@ curr_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")  # 获取当前时
 class DDPGConfig:
     def __init__(self):
         self.algo = 'DDPG_CD'  # 算法名称
-        self.env = "Section15"  # 环境名称
-        self.train_eps = 1100  # 训练的回合数
+        self.env = "Section16"  # 环境名称
+        self.train_eps = 2200  # 训练的回合数
         self.max_step = 500  # 每回合最多步数
         self.eval_eps = 10  # 测试的回合数
         self.gamma = 0.99  # 折扣因子
@@ -80,6 +80,8 @@ def train(cfg, line, agent, train_model):
     ma_rewards = []  # 记录滑动平均奖励
     unsafe_counts = []  # 记录超速次数
     ma_unsafe_counts = []  # 记录滑动平均次数
+    protect_counts = []
+    ma_protect_counts = []
     total_t_list = []  # 全部时间列表
     total_v_list = []  # 全部速度列表
     total_a_list = []  # 全部动作列表
@@ -102,6 +104,7 @@ def train(cfg, line, agent, train_model):
         done = False
         ep_reward = 0
         ep_unsafe_counts = 0  # 每一幕的不安全动作次数
+        ep_protect_counts = 0
         i_step = 1
         limit_list = []
         A_limit_list = []
@@ -134,7 +137,7 @@ def train(cfg, line, agent, train_model):
             total_power = total_power + state_node.t_power + state_node.re_power
             t_power += state_node.t_power
             re_power += state_node.re_power
-            done, ep_unsafe_counts = state_node.get_reward(ep_unsafe_counts, total_power)  # 计算奖励
+            done, ep_unsafe_counts, ep_protect_counts = state_node.get_reward(ep_unsafe_counts, total_power, ep_protect_counts)  # 计算奖励
             ep_reward += state_node.current_reward
             t_list.append(state_node.next_state[0].copy())
             v_list.append(state_node.next_state[1].copy())
@@ -175,32 +178,37 @@ def train(cfg, line, agent, train_model):
             state_node = MctsStateNode(state_node.next_state, i_step, line, agent, i_ep, ou_noise, train_flag, train_model, parent=None)
             node_list.append(state_node)
         if (i_ep + 1) % 10 == 0:
-            print('回合：{}/{}，奖励：{}, 能耗  {}, 牵引能耗  {}, 最终时间  {}, 最终速度  {}, 不安全次数  {}, 最终位置 {}'.format(i_ep + 1,
-                                                                                                                               cfg.train_eps,
-                                                                                                                               np.around(
-                                                                                                                                   ep_reward[0],
-                                                                                                                                   2),
-                                                                                                                               np.around(
-                                                                                                                                   total_power[0],
-                                                                                                                                   4), np.around(
+            print('回合：{}/{}，奖励：{}, 能耗  {}, 牵引能耗  {}, 最终时间  {}, 最终速度  {}, 不安全次数  {}, 最终位置 {}, 防护次数 {}'.format(i_ep + 1,
+                                                                                                                                            cfg.train_eps,
+                                                                                                                                            np.around(
+                                                                                                                                                ep_reward[0],
+                                                                                                                                                2),
+                                                                                                                                            np.around(
+                                                                                                                                                total_power[0],
+                                                                                                                                                4), np.around(
                     t_power[0], 4),
-                                                                                                                               np.around(
-                                                                                                                                   state_node.next_state[
-                                                                                                                                       0],
-                                                                                                                                   2), np.
-                                                                                                                               around(
+                                                                                                                                            np.around(
+                                                                                                                                                state_node.next_state[
+                                                                                                                                                    0],
+                                                                                                                                                2), np.
+                                                                                                                                            around(
                     state_node.next_state[1], 2),
 
-                                                                                                                               np.round(
-                                                                                                                                   ep_unsafe_counts,
-                                                                                                                                   0),
-                                                                                                                               state_node.step))
+                                                                                                                                            np.round(
+                                                                                                                                                ep_unsafe_counts,
+                                                                                                                                                0),
+                                                                                                                                            state_node.step, np.round(ep_protect_counts, decimals=0)))
         rewards.append(ep_reward)
         unsafe_counts.append(ep_unsafe_counts)
+        protect_counts.append(ep_protect_counts)
         if ma_unsafe_counts:
             ma_unsafe_counts.append(0.9 * ma_unsafe_counts[-1] + 0.1 * ep_unsafe_counts)
         else:
             ma_unsafe_counts.append(ep_unsafe_counts)
+        if ma_protect_counts:
+            ma_protect_counts.append(0.9 * ma_protect_counts[-1] + 0.1 * ep_protect_counts)
+        else:
+            ma_protect_counts.append(ep_protect_counts)
         total_power_list.append(total_power)
         total_t_power_list.append(t_power)
         total_re_power_list.append(re_power)
@@ -225,6 +233,8 @@ def eval(cfg, line, agent, train_model):
     ma_rewards = []  # 记录滑动平均奖励
     unsafe_counts = []  # 记录超速次数
     ma_unsafe_counts = []  # 记录滑动平均次数
+    protect_counts = []
+    ma_protect_counts = []
     total_t_list = []  # 全部时间列表
     total_v_list = []  # 全部速度列表
     total_a_list = []  # 全部动作列表
@@ -244,6 +254,7 @@ def eval(cfg, line, agent, train_model):
         done = False
         ep_reward = 0
         ep_unsafe_counts = 0  # 每一幕的不安全动作次数
+        ep_protect_counts = 0
         i_step = 1
         t_list = [0]
         v_list = [0]
@@ -270,7 +281,7 @@ def eval(cfg, line, agent, train_model):
             total_power = total_power + state_node.t_power + state_node.re_power
             t_power += state_node.t_power
             re_power += state_node.re_power
-            done, ep_unsafe_counts = state_node.get_reward(ep_unsafe_counts, total_power)  # 计算奖励
+            done, ep_unsafe_counts, ep_protect_counts = state_node.get_reward(ep_unsafe_counts, total_power, ep_protect_counts)  # 计算奖励
             ep_reward += state_node.current_reward
             t_list.append(state_node.next_state[0].copy())
             v_list.append(state_node.next_state[1].copy())
@@ -316,10 +327,15 @@ def eval(cfg, line, agent, train_model):
                                                                                                                            state_node.step))
         rewards.append(ep_reward)
         unsafe_counts.append(ep_unsafe_counts)
+        protect_counts.append(ep_protect_counts)
         if ma_unsafe_counts:
             ma_unsafe_counts.append(0.9 * unsafe_counts[-1] + 0.1 * ep_unsafe_counts)
         else:
             ma_unsafe_counts.append(ep_unsafe_counts)
+        if ma_protect_counts:
+            ma_protect_counts.append(0.9 * ma_protect_counts[-1] + 0.1 * ep_protect_counts)
+        else:
+            ma_protect_counts.append(ep_protect_counts)
         if ma_rewards:
             ma_rewards.append(0.9 * ma_rewards[-1] + 0.1 * ep_reward)
         else:

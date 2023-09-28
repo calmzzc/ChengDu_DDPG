@@ -1,6 +1,18 @@
 import numpy as np
 import torch
 import time
+from concurrent.futures import ProcessPoolExecutor
+
+
+def process_child(i):
+    MctsNode._selected_children = MctsNode._children.get(i)  # 从每个根节点开始进行演绎，根节点根据自己的状态选择动作
+    MctsNode._selected_children.Mcts_do()
+    if MctsNode._selected_children.destroy_flag:
+        del MctsNode._children[i]
+        del action_dict[i]
+    else:
+        temp_reward_dict[i] = MctsNode._selected_children.current_reward
+        temp_node_dict[i] = MctsNode._selected_children
 
 
 class MctsStateNode:
@@ -67,6 +79,7 @@ class MctsStateNode:
         self.max_action_index = 0
 
         self.destroy_flag = 0  # 判断是否需要销毁该节点，初始为0，不用销毁，主要用在Mcts过程中
+        self.shield_flag = 0
 
     # # 获取最大step
     # def get_max_step(self):
@@ -159,17 +172,19 @@ class MctsStateNode:
             # self.next_simulate_node.get_action()
             # self.next_simulate_node.current_reward = self.current_reward
             # self.current_reward = temp_reward
+            # self.agent.memory.push(self.state.copy(), self.action.copy(), self.current_reward.copy(), self.next_state.copy(), 0)
             if self.next_simulate_node.step % 5 != 0 and self.next_simulate_node.step <= self.max_step:
                 self.next_simulate_node.simulate()
             else:
                 self.simulate_return()
 
     def Mcts_do(self):  # 进行演绎
-        self.get_simulate_depth()
-        for i in range(self.simulate_depth):
-            self.simulate()
-            if self.destroy_flag:
-                break
+        self.simulate()
+        # self.get_simulate_depth()
+        # for i in range(self.simulate_depth):
+        #     self.simulate()
+        #     if self.destroy_flag:
+        #         break
 
         # self.expand()
         # self._selected_action, self._selected_children = self.select(c_puct=5)
@@ -198,6 +213,8 @@ class MctsStateNode:
             else:
                 temp_reward_dict[i] = MctsNode._selected_children.current_reward
                 temp_node_dict[i] = MctsNode._selected_children
+                # self.agent.memory.push(MctsNode._selected_children.state.copy(), MctsNode._selected_children.action.copy(), MctsNode._selected_children.current_reward.copy(),
+                #                        MctsNode._selected_children.next_state.copy(), 0)
         if temp_reward_dict:
             temp_index = max(temp_reward_dict, key=(lambda k: temp_reward_dict[k]))
             temp_node = MctsNode._children.get(temp_index)
@@ -242,7 +259,7 @@ class MctsStateNode:
         velocity = np.sqrt(temp_square_velocity)
         if velocity <= 0:
             velocity = np.array(1).reshape(1)
-        if velocity * 3.6 > min(next_limit_speed, self.ATP_limit):
+        if velocity * 3.6 > min(next_limit_speed - 2, self.ATP_limit):
             return 1
         else:
             return 0
@@ -255,7 +272,7 @@ class MctsStateNode:
         for j in range(len(key_list) - 1):
             if key_list[j] <= self.step * self.line.delta_distance < key_list[j + 1]:
                 key = key_list[j]
-        self.next_max_speed = min(self.ATP_limit, self.line.speed_limit[key])
+        self.next_max_speed = min(self.ATP_limit, self.line.speed_limit[key] - 2)
 
     def get_max_acc_index(self):
         temp_velocity = np.array(self.state[1]).reshape(1)
@@ -352,12 +369,13 @@ class MctsStateNode:
         self.reshape_action_main()
         self.get_acc()
         if self.Mcts_Check() and self.step < self.max_step:
-            temp_action = self.Mcts_Start()
-            if temp_action is not None:
-                self.action = temp_action
-            else:
-                self.get_safe_action()
-                # self.action = np.array(-1.5).reshape(1)
+            self.get_safe_action()
+            # temp_action = self.Mcts_Start()
+            # if temp_action is not None:
+            #     self.action = temp_action
+            # else:
+            #     self.get_safe_action()
+            #     # self.action = np.array(-1.5).reshape(1)
             self.reshape_action_main()
             self.get_acc()
         self.get_next_state()
@@ -388,7 +406,7 @@ class MctsStateNode:
             self.action = self.agent.choose_action(self.state)
             self.action = np.array(self.action).reshape(1)
 
-    def get_ATP_limit(self):
+    def get_ATP_limit(self):  # 在计算ATP这里加一个-2看看效果怎么样
         key_list = []
         key = 0
         key_next = 0
@@ -408,12 +426,13 @@ class MctsStateNode:
 
     def reshape_action_main(self):
         # self.action = min(self.action, self.last_node_action + 0.3)
+        # self.action = self.action
         if self.step <= 0.001 * self.max_step:
             self.action = (self.action + 0.03) / 2
         elif self.max_step - self.step <= 0.0015 * self.max_step:
             self.action = (self.action - 1) / 1
         else:
-            self.action = min(self.action, self.last_node_action + 0.3)
+            self.action = self.action
         low_bound = -1
         upper_bound = 1
         self.action = np.clip(self.action, low_bound, upper_bound)
@@ -428,7 +447,7 @@ class MctsStateNode:
         elif self.max_step - self.step <= 0.0015 * self.max_step:
             self.action = (self.action - 1) / 1
         else:
-            self.action = min(self.action, self.last_node_action + 0.3)
+            self.action = self.action
         # if abs(self.last_node_action):
         #     self.action = np.clip(self.action, self.last_node_action - 0.3, self.last_node_action + 0.3)
         low_bound = -1
@@ -476,12 +495,12 @@ class MctsStateNode:
     def get_current_tra_acc(self):  # 计算当前牵引加速度
         # self.train_model.get_max_traction_force(self.state[1] * 3.6)  # 当前车辆的最大牵引力
         tra_force = self.train_model.max_traction_force * self.action  # 当前输出的牵引力
-        self.tm_acc = 1.5 * tra_force / self.train_model.weight
+        self.tm_acc = 1 * tra_force / self.train_model.weight
 
     def get_current_b_acc(self):  # 计算当前制动加速度
         # self.train_model.get_max_brake_force(self.state[1] * 3.6)
         bra_force = self.train_model.max_brake_force * abs(self.action)  # 单位是kN
-        self.bm_acc = - 1.5 * bra_force / self.train_model.weight
+        self.bm_acc = - 1 * bra_force / self.train_model.weight
 
     def get_m_acc(self):  # 判断当前是制动还是牵引
         self.train_model.get_max_traction_force(self.state[1] * 3.6)  # 当前车辆的最大牵引力
@@ -534,16 +553,16 @@ class MctsStateNode:
             if key_list[j] <= self.step * self.line.delta_distance < key_list[j + 1]:
                 key = key_list[j]
         limit_speed = self.line.speed_limit[key]
-        if self.state[1] * 3.6 >= min(limit_speed, self.ATP_limit):  # 超速
+        if self.state[1] * 3.6 >= min(limit_speed - 2, self.ATP_limit):  # 超速
             self.speed_punish = 1
-            self.current_limit_speed = min(limit_speed / 3.6, self.ATP_limit / 3.6)
+            self.current_limit_speed = min((limit_speed - 2) / 3.6, self.ATP_limit / 3.6)
         else:
             self.speed_punish = 0
-            self.current_limit_speed = min(limit_speed / 3.6, self.ATP_limit / 3.6)
+            self.current_limit_speed = min((limit_speed - 2) / 3.6, self.ATP_limit / 3.6)
 
     # 下面是舒适度检查过程
     def comfort_check(self):
-        if abs(self.acc - self.last_node_acc) >= 0.3:
+        if abs(self.action - self.last_node_action) >= 0.3:
             self.comfort_punish = 1.5  # 不舒适
         else:
             self.comfort_punish = 0
@@ -604,7 +623,7 @@ class MctsStateNode:
         velocity = np.sqrt(temp_square_velocity)
         if velocity <= 0:
             velocity = np.array(1).reshape(1)
-        if velocity * 3.6 > min(next_limit_speed, self.ATP_limit):
+        if velocity * 3.6 > min(next_limit_speed - 2, self.ATP_limit):
             return 1
         else:
             return 0
@@ -627,13 +646,14 @@ class MctsStateNode:
 
     # 获取安全动作的函数
     def get_safe_action(self):
+        self.shield_flag = 1
         xunhuan_count = 0
         chaosu_flag = 0
         initial_velocity = self.state[1].copy()
         while chaosu_flag != 1:
             xunhuan_count += 1
             if xunhuan_count > 100:
-                temp_acc = self.acc - self.g_acc - self.c_acc
+                temp_acc = self.acc - self.g_acc - self.c_acc  # 这里是计算牵引或制动加速度的
                 if temp_acc >= 0:
                     self.action = temp_acc * self.train_model.weight / self.train_model.max_traction_force
                 else:
@@ -677,7 +697,7 @@ class MctsStateNode:
         self.state[1] = initial_velocity
 
     # 下面是奖励的计算
-    def get_reward(self, unsafe_counts, total_power):
+    def get_reward(self, unsafe_counts, total_power, ep_protect_counts):
         self.speed_check2()
         self.comfort_check()
         if self.step == self.max_step:
@@ -710,7 +730,7 @@ class MctsStateNode:
             if self.speed_punish:
                 unsafe_counts += 1
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1.3 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) + self.p_indicator - 10 * self.comfort_punish
-                self.current_reward = -3.4 * self.t_power - 3.4 * self.re_power - 15.5 * abs(
+                self.current_reward = -1 * self.t_power - 1 * self.re_power - 1.5 * abs(
                     1 * temp_time - 1 * (abs(self.line.scheduled_time - self.state[0]) / (
                             self.max_step + 1 - self.step))) + self.p_indicator - 10 * self.comfort_punish  # 当前step的运行时间和剩余距离平均时间的差值
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - abs(1 * (
@@ -719,10 +739,13 @@ class MctsStateNode:
             else:
                 unsafe_counts += 0
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1.3 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) - 10 * self.comfort_punish
-                self.current_reward = -3.4 * self.t_power - 3.4 * self.re_power - 15.5 * abs(
+                self.current_reward = -1 * self.t_power - 1 * self.re_power - 1.5 * abs(
                     1 * temp_time - 1 * (abs(self.line.scheduled_time - self.state[0]) / (
                             self.max_step + 1 - self.step))) - 10 * self.comfort_punish
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - abs(1 * (
                 #         2 * self.line.delta_distance * (self.max_step + 1 - self.step) / (abs(self.line.scheduled_time - self.state[0])) - self.state[
                 #     1])) - 10 * self.comfort_punish
-        return done, unsafe_counts
+        if self.shield_flag:
+            self.current_reward += -50
+            ep_protect_counts += 1
+        return done, unsafe_counts, ep_protect_counts

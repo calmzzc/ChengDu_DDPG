@@ -16,6 +16,7 @@ import torch.optim as optim
 
 from model import Actor, Critic
 from memory import ReplayBuffer
+import multiprocessing
 
 
 class DDPG:
@@ -44,7 +45,7 @@ class DDPG:
         action = self.actor(state)
         return action.detach().cpu().numpy()[0, 0]
 
-    def update(self):
+    def update(self):  # update全部要改，现在actor永远输出的都是1
         if len(self.memory) < self.batch_size:  # 当 memory 中不满足一个批量时，不更新策略
             return
         # 从经验回放中(replay memory)中随机采样一个批量的转移(transition)
@@ -93,3 +94,86 @@ class DDPG:
 
     def load(self, path):
         self.actor.load_state_dict(torch.load(path + 'checkpoint.pt'))
+
+    def update_shield(self):
+        if len(self.memory) < self.batch_size:  # 当 memory 中不满足一个批量时，不更新策略
+            return
+        # 从经验回放中(replay memory)中随机采样一个批量的转移(transition)
+        state_node_list = self.memory.sample_new(self.batch_size)
+        state_node_tuple = tuple(state_node.state for state_node in state_node_list)
+        # origin_action_tuple = tuple(state_node.action for state_node in state_node_list)
+        # next_state_node_list = self.memory.sample_new(self.batch_size)
+        next_state_node_tuple = tuple(state_node.next_state for state_node in state_node_list)
+        # action_state_node_list = self.memory.sample_new(self.batch_size)
+        action_state_node_tuple = tuple(state_node.action for state_node in state_node_list)
+        # reward_state_node_list = self.memory.sample_new(self.batch_size)
+        reward_state_node_tuple = tuple(state_node.current_reward for state_node in state_node_list)
+        # done_state_node_list = self.memory.sample_new(self.batch_size)
+        done_state_node_tuple = tuple(state_node.done for state_node in state_node_list)
+
+        # 转变为张量
+        state = torch.FloatTensor(state_node_tuple).to(self.device)
+        next_state = torch.FloatTensor(next_state_node_tuple).to(self.device)
+        action = torch.FloatTensor(action_state_node_tuple).to(self.device)
+        reward = torch.FloatTensor(reward_state_node_tuple).to(self.device)
+        done = torch.FloatTensor(done_state_node_tuple).unsqueeze(1).to(self.device)
+        # origin_action_tuple = torch.FloatTensor(origin_action_tuple).to(self.device)
+        origin_action = self.actor(state)
+        origin_action_list = []
+        # for i in range(len(state_node_list)):
+        #     state_node_list[i].get_ATP_limit()
+        #     state_node_list[i].get_action()
+        #     state_node_list[i].reshape_action()
+        #     state_node_list[i].get_acc()
+        #     if state_node_list[i].Shield_Check():
+        #         state_node_list[i].get_safe_action()
+        #     if origin_action[i] != state_node_list[i].action:
+        #         origin_action_list.append(state_node_list[i].action)
+        #     else:
+        #         origin_action_list.append(origin_action[i].numpy())
+        # origin_action_tensor = torch.Tensor(origin_action_list).to('cuda')
+        action_loss = nn.MSELoss()(action, origin_action)
+        self.actor_optimizer.zero_grad()
+        action_loss.backward()
+        self.actor_optimizer.step()
+        for target_param, param in zip(self.target_actor.parameters(), self.actor.parameters()):
+            target_param.data.copy_(param.data)
+        # for i in range(len(next_state_node_list)):
+        #     next_state_node_list[i].state = next_state_node_list[i].next_state
+        #     next_state_node_list[i].get_ATP_limit()
+        #     next_state_node_list[i].get_action()
+        #     next_state_node_list[i].reshape_action()
+        #     next_state_node_list[i].get_acc()
+        #     if next_state_node_list[i].Shield_Check():
+        #         next_state_node_list[i].get_safe_action()
+        #     if origin_next_action[i] != next_state_node_list[i].action:
+        #         origin_next_action[i] = torch.from_numpy(next_state_node_list[i].action).to('cuda').clone()
+        new_origin_action = self.actor(state)
+        policy_loss = self.critic(state, self.actor(state))
+        policy_loss = -policy_loss.mean()
+
+        origin_next_action = self.target_actor(next_state)
+        target_value = self.target_critic(next_state, origin_next_action.detach())
+        expected_value = reward + (1.0 - done) * self.gamma * target_value
+        expected_value = torch.clamp(expected_value, -np.inf, np.inf)
+        value = self.critic(state, action)
+        value_loss = nn.MSELoss()(value, expected_value.detach())
+
+        self.actor_optimizer.zero_grad()
+        policy_loss.backward()
+        self.actor_optimizer.step()
+        self.critic_optimizer.zero_grad()
+        value_loss.backward()
+        self.critic_optimizer.step()
+
+        # 软更新
+        for target_param, param in zip(self.target_critic.parameters(), self.critic.parameters()):
+            target_param.data.copy_(
+                target_param.data * (1.0 - self.soft_tau) +
+                param.data * self.soft_tau
+            )
+        for target_param, param in zip(self.target_actor.parameters(), self.actor.parameters()):
+            target_param.data.copy_(
+                target_param.data * (1.0 - self.soft_tau) +
+                param.data * self.soft_tau
+            )

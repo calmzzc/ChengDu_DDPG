@@ -35,3 +35,13 @@ class ReplayBuffer:
         ''' 返回当前存储的量
         '''
         return len(self.buffer)
+
+    def push_new(self, statenode):
+        if len(self.buffer) < self.capacity:
+            self.buffer.append(None)
+        self.buffer[self.position] = statenode
+        self.position = (self.position + 1) % self.capacity
+
+    def sample_new(self, batch_size):
+        node_batch = random.sample(self.buffer, batch_size)
+        return node_batch
