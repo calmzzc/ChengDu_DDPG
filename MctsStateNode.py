@@ -40,7 +40,7 @@ class MctsStateNode:
         self.last_node_action = np.array(0).reshape(1)  # 前一个节点的动作
         self.last_node_acc = 0  # 前一个节点的加速度
 
-        self.next_state = np.zeros(4)  # 状态转移后的状态
+        self.next_state = np.zeros(3)  # 状态转移后的状态
         self.t_power = 0.0  # 状态转移过程的牵引能耗
         self.re_power = 0  # 状态转移过程产生的再生制动能量
 
@@ -80,8 +80,10 @@ class MctsStateNode:
 
         self.destroy_flag = 0  # 判断是否需要销毁该节点，初始为0，不用销毁，主要用在Mcts过程中
         self.shield_flag = 0
+        self.done = 0
 
-    # # 获取最大step
+        # # 获取最大step
+
     # def get_max_step(self):
     #     self.max_step = self.line.length / self.line.delta_distance
 
@@ -337,11 +339,11 @@ class MctsStateNode:
         self.comfort_check()
         temp_time = self.line.delta_distance / (self.state[1] / 2 + self.next_state[1] / 2)
         if self.speed_punish:
-            self.current_reward = -3.4 * self.t_power - 3.4 * self.re_power - 15.5 * abs(
-                1 * temp_time - (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) + self.p_indicator - 10 * self.comfort_punish  # 当前step的运行时间和剩余距离平均时间的差值
+            self.current_reward = -3 * self.t_power - 3 * self.re_power - 10.5 * abs(
+                temp_time - 1.2 * (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) + self.p_indicator - 10 * self.comfort_punish  # 当前step的运行时间和剩余距离平均时间的差值
         else:
-            self.current_reward = -3.4 * self.t_power - 3.4 * self.re_power - 15.5 * abs(
-                1 * temp_time - (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) - 10 * self.comfort_punish
+            self.current_reward = -3 * self.t_power - 3 * self.re_power - 10.5 * abs(
+                temp_time - 1.2 * (abs(self.line.scheduled_time - self.state[0]) / (self.max_step + 1 - self.step))) - 10 * self.comfort_punish
 
     def Mcts_State_Transition(self):
         self.get_ATP_limit()
@@ -349,10 +351,7 @@ class MctsStateNode:
         self.reshape_action_main()
         self.get_acc()
         if self.Mcts_Check() and self.step < self.max_step and self.episode > 100:
-            MCTS_START_TIME = time.time()
             temp_action = self.Mcts_Start()
-            MCTS_END_TIME = time.time()
-            MCTS_TIME = MCTS_END_TIME - MCTS_START_TIME
             if temp_action is not None:
                 self.action = temp_action
             else:
@@ -366,16 +365,17 @@ class MctsStateNode:
     def Mcts_State_Transition_eval(self):
         self.get_ATP_limit()
         self.get_action()
+        # self.action = self.agent.eval_choose_action(self.state)
+        # self.action = np.array(self.action).reshape(1)
         self.reshape_action_main()
         self.get_acc()
         if self.Mcts_Check() and self.step < self.max_step:
-            self.get_safe_action()
-            # temp_action = self.Mcts_Start()
-            # if temp_action is not None:
-            #     self.action = temp_action
-            # else:
-            #     self.get_safe_action()
-            #     # self.action = np.array(-1.5).reshape(1)
+            # self.get_safe_action()
+            temp_action = self.Mcts_Start()
+            if temp_action is not None:
+                self.action = temp_action
+            else:
+                self.get_safe_action()
             self.reshape_action_main()
             self.get_acc()
         self.get_next_state()
@@ -405,6 +405,7 @@ class MctsStateNode:
         else:
             self.action = self.agent.choose_action(self.state)
             self.action = np.array(self.action).reshape(1)
+        self.action = np.round(self.action, 2)
 
     def get_ATP_limit(self):  # 在计算ATP这里加一个-2看看效果怎么样
         key_list = []
@@ -581,8 +582,8 @@ class MctsStateNode:
         time = time + temp_time
         self.next_state[0] = time  # 状态转移后的时间
         self.next_state[1] = velocity  # 状态转移后的速度
-        self.next_state[2] = self.acc  # 用什么样的加速度达到下状态（上一个动作产生的加速度）
-        self.next_state[3] = (self.step + 1) * self.line.delta_distance  # 下状态所处的位置，对于当前的状态就是当前位置
+        # self.next_state[2] = self.acc  # 用什么样的加速度达到下状态（上一个动作产生的加速度）
+        self.next_state[2] = (self.step + 1) * self.line.delta_distance / 1000  # 下状态所处的位置，对于当前的状态就是当前位置
         # self.next_state[2] = self.acc
 
     # 下面是完整的一般状态转移过程
@@ -701,7 +702,7 @@ class MctsStateNode:
         self.speed_check2()
         self.comfort_check()
         if self.step == self.max_step:
-            done = 1
+            self.done = 1
             if abs(self.next_state[0] - self.line.scheduled_time) <= 10 and abs(self.next_state[1]) <= 3:
                 e_reward = 100  # 准时且停下施加额外奖励
             else:
@@ -716,22 +717,22 @@ class MctsStateNode:
                 unsafe_counts += 1
                 # self.current_reward = -0.001 * total_power - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
                 self.current_reward = -3 * (total_power - self.line.ac_power) - 25 * self.next_state[
-                    1] + 2 * t_punish + e_reward - 10 * self.comfort_punish
+                    1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
                 # self.current_reward = -1 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish + self.p_indicator
             else:
                 unsafe_counts += 0
                 # self.current_reward = -0.001 * total_power - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
                 self.current_reward = -3 * (total_power - self.line.ac_power) - 25 * self.next_state[
-                    1] + 2 * t_punish + e_reward - 10 * self.comfort_punish
+                    1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
                 # self.current_reward = -1 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
         else:
-            done = 0  # 能耗前的系数影响平化程度，时间项的系数影响整体的曲线形状
+            self.done = 0  # 能耗前的系数影响平化程度，时间项的系数影响整体的曲线形状
             temp_time = self.line.delta_distance / (self.state[1] / 2 + self.next_state[1] / 2)
             if self.speed_punish:
                 unsafe_counts += 1
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1.3 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) + self.p_indicator - 10 * self.comfort_punish
-                self.current_reward = -1 * self.t_power - 1 * self.re_power - 1.5 * abs(
-                    1 * temp_time - 1 * (abs(self.line.scheduled_time - self.state[0]) / (
+                self.current_reward = -3 * self.t_power - 3 * self.re_power - 10.5 * abs(
+                    1 * temp_time - 1.2 * (abs(self.line.scheduled_time - self.state[0]) / (
                             self.max_step + 1 - self.step))) + self.p_indicator - 10 * self.comfort_punish  # 当前step的运行时间和剩余距离平均时间的差值
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - abs(1 * (
                 #         2 * self.line.delta_distance * (self.max_step + 1 - self.step) / (abs(self.line.scheduled_time - self.state[0])) - self.state[
@@ -739,13 +740,13 @@ class MctsStateNode:
             else:
                 unsafe_counts += 0
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1.3 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) - 10 * self.comfort_punish
-                self.current_reward = -1 * self.t_power - 1 * self.re_power - 1.5 * abs(
-                    1 * temp_time - 1 * (abs(self.line.scheduled_time - self.state[0]) / (
+                self.current_reward = -3 * self.t_power - 3 * self.re_power - 10.5 * abs(
+                    1 * temp_time - 1.2 * (abs(self.line.scheduled_time - self.state[0]) / (
                             self.max_step + 1 - self.step))) - 10 * self.comfort_punish
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - abs(1 * (
                 #         2 * self.line.delta_distance * (self.max_step + 1 - self.step) / (abs(self.line.scheduled_time - self.state[0])) - self.state[
                 #     1])) - 10 * self.comfort_punish
         if self.shield_flag:
-            self.current_reward += -50
+            # self.current_reward += -50
             ep_protect_counts += 1
-        return done, unsafe_counts, ep_protect_counts
+        return self.done, unsafe_counts, ep_protect_counts

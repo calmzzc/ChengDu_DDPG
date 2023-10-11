@@ -26,7 +26,7 @@ class StateNode:
         self.last_node_action = 0  # 前一个节点的动作
         self.last_node_acc = 0  # 前一个节点的加速度
 
-        self.next_state = np.zeros(4)  # 状态转移后的状态
+        self.next_state = np.zeros(3)  # 状态转移后的状态
         self.t_power = 0.0  # 状态转移过程的牵引能耗
         self.re_power = 0  # 状态转移过程产生的再生制动能量
 
@@ -242,8 +242,8 @@ class StateNode:
         time = time + temp_time
         self.next_state[0] = time  # 状态转移后的时间
         self.next_state[1] = velocity  # 状态转移后的速度
-        self.next_state[2] = self.acc  # 用什么样的加速度达到下状态（上一个动作产生的加速度）
-        self.next_state[3] = (self.step + 1) * self.line.delta_distance  # 下状态所处的位置，对于当前的状态就是当前位置
+        # self.next_state[2] = self.acc  # 用什么样的加速度达到下状态（上一个动作产生的加速度）
+        self.next_state[2] = (self.step + 1) * self.line.delta_distance / 1000  # 下状态所处的位置，对于当前的状态就是当前位置
         # self.next_state[2] = self.acc
 
     # 下面是完整的一般状态转移过程
@@ -361,13 +361,13 @@ class StateNode:
             if self.speed_punish:
                 unsafe_counts += 1
                 # self.current_reward = -0.001 * total_power - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
-                self.current_reward = -1 * (total_power - self.line.ac_power) - 25 * self.next_state[
+                self.current_reward = -3 * (total_power - self.line.ac_power) - 25 * self.next_state[
                     1] + 2 * t_punish + e_reward - 10 * self.comfort_punish
                 # self.current_reward = -1 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish + self.p_indicator
             else:
                 unsafe_counts += 0
                 # self.current_reward = -0.001 * total_power - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
-                self.current_reward = -1 * (total_power - self.line.ac_power) - 25 * self.next_state[
+                self.current_reward = -3 * (total_power - self.line.ac_power) - 25 * self.next_state[
                     1] + 2 * t_punish + e_reward - 10 * self.comfort_punish
                 # self.current_reward = -1 * (total_power - self.line.ac_power) - 25 * self.next_state[1] + 1 * t_punish + e_reward - 10 * self.comfort_punish
         else:
@@ -376,8 +376,8 @@ class StateNode:
             if self.speed_punish:
                 unsafe_counts += 1
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1.3 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) + self.p_indicator - 10 * self.comfort_punish
-                self.current_reward = -1 * self.t_power - 1 * self.re_power - 1 * abs(
-                    1 * temp_time - 0.1 * (abs(self.line.scheduled_time - self.state[0]) / (
+                self.current_reward = -3 * self.t_power - 3 * self.re_power - 10.5 * abs(
+                    1 * temp_time - 1.2 * (abs(self.line.scheduled_time - self.state[0]) / (
                             self.max_step + 1 - self.step))) + self.p_indicator - 10 * self.comfort_punish  # 当前step的运行时间和剩余距离平均时间的差值
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - abs(1 * (
                 #         2 * self.line.delta_distance * (self.max_step + 1 - self.step) / (abs(self.line.scheduled_time - self.state[0])) - self.state[
@@ -385,14 +385,14 @@ class StateNode:
             else:
                 unsafe_counts += 0
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - 3.4 * abs(1.3 * temp_time - (self.line.scheduled_time / (self.max_step + 1))) - 10 * self.comfort_punish
-                self.current_reward = -1 * self.t_power - 1 * self.re_power - 1 * abs(
-                    1 * temp_time - 0.1 * (abs(self.line.scheduled_time - self.state[0]) / (
+                self.current_reward = -3 * self.t_power - 3 * self.re_power - 10.5 * abs(
+                    1 * temp_time - 1.2 * (abs(self.line.scheduled_time - self.state[0]) / (
                             self.max_step + 1 - self.step))) - 10 * self.comfort_punish
                 # self.current_reward = -1.5 * self.t_power - 1.5 * self.re_power - abs(1 * (
                 #         2 * self.line.delta_distance * (self.max_step + 1 - self.step) / (abs(self.line.scheduled_time - self.state[0])) - self.state[
                 #     1])) - 10 * self.comfort_punish
         if self.shield_flag:
-            self.current_reward += -20
+            self.current_reward += 0
             ep_protect_counts += 1
         return self.done, unsafe_counts, ep_protect_counts
 

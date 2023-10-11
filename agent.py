@@ -17,6 +17,7 @@ import torch.optim as optim
 from model import Actor, Critic
 from memory import ReplayBuffer
 import multiprocessing
+import matplotlib.pyplot as plt
 
 
 class DDPG:
@@ -27,14 +28,16 @@ class DDPG:
         self.target_critic = Critic(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
         self.target_actor = Actor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
 
+        self.integrate_actor = Actor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
+
         # 复制参数到目标网络
         for target_param, param in zip(self.target_critic.parameters(), self.critic.parameters()):
             target_param.data.copy_(param.data)
         for target_param, param in zip(self.target_actor.parameters(), self.actor.parameters()):
             target_param.data.copy_(param.data)
-        self.critic_optimizer = optim.Adam(
-            self.critic.parameters(), lr=cfg.critic_lr)
+        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=cfg.critic_lr)
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=cfg.actor_lr)
+        self.integrate_optimizer = optim.Adam(self.integrate_actor.parameters(), lr=5 * cfg.actor_lr)
         self.memory = ReplayBuffer(cfg.memory_capacity)
         self.batch_size = cfg.batch_size
         self.soft_tau = cfg.soft_tau  # 软更新参数
@@ -42,8 +45,15 @@ class DDPG:
 
     def choose_action(self, state):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        # state = state.repeat(2, 1)
         action = self.actor(state)
-        return action.detach().cpu().numpy()[0, 0]
+        return np.round(action.detach().cpu().numpy()[0, 0], 2)
+
+    def eval_choose_action(self, state):
+        state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        # state = state.repeat(2, 1)
+        action = self.integrate_actor(state)
+        return np.round(action.detach().cpu().numpy()[0, 0], 2)
 
     def update(self):  # update全部要改，现在actor永远输出的都是1
         if len(self.memory) < self.batch_size:  # 当 memory 中不满足一个批量时，不更新策略
@@ -54,11 +64,7 @@ class DDPG:
         state = torch.FloatTensor(state).to(self.device)
         next_state = torch.FloatTensor(next_state).to(self.device)
         action = torch.FloatTensor(action).to(self.device)
-        # reward = torch.FloatTensor(np.float64(reward)).unsqueeze(1).to(self.device)
-        # reward = torch.FloatTensor(reward).unsqueeze(1).to(self.device)
         reward = torch.FloatTensor(reward).to(self.device)
-        # done = torch.FloatTensor(np.float64(done)).unsqueeze(1).to(self.device)
-        # done = torch.FloatTensor(done).unsqueeze(1).to(self.device)
         done = torch.FloatTensor(done).unsqueeze(1).to(self.device)
 
         policy_loss = self.critic(state, self.actor(state))
@@ -92,8 +98,14 @@ class DDPG:
     def save(self, path):
         torch.save(self.actor.state_dict(), path + 'checkpoint.pt')
 
+    def save_int(self, path):
+        torch.save(self.integrate_actor.state_dict(), path + 'int_checkpoint.pt')
+
     def load(self, path):
         self.actor.load_state_dict(torch.load(path + 'checkpoint.pt'))
+
+    def load_int(self, path):
+        self.actor.load_state_dict(torch.load(path + 'int_checkpoint.pt'))
 
     def update_shield(self):
         if len(self.memory) < self.batch_size:  # 当 memory 中不满足一个批量时，不更新策略
@@ -117,38 +129,20 @@ class DDPG:
         action = torch.FloatTensor(action_state_node_tuple).to(self.device)
         reward = torch.FloatTensor(reward_state_node_tuple).to(self.device)
         done = torch.FloatTensor(done_state_node_tuple).unsqueeze(1).to(self.device)
-        # origin_action_tuple = torch.FloatTensor(origin_action_tuple).to(self.device)
-        origin_action = self.actor(state)
-        origin_action_list = []
-        # for i in range(len(state_node_list)):
-        #     state_node_list[i].get_ATP_limit()
-        #     state_node_list[i].get_action()
-        #     state_node_list[i].reshape_action()
-        #     state_node_list[i].get_acc()
-        #     if state_node_list[i].Shield_Check():
-        #         state_node_list[i].get_safe_action()
-        #     if origin_action[i] != state_node_list[i].action:
-        #         origin_action_list.append(state_node_list[i].action)
-        #     else:
-        #         origin_action_list.append(origin_action[i].numpy())
-        # origin_action_tensor = torch.Tensor(origin_action_list).to('cuda')
-        action_loss = nn.MSELoss()(action, origin_action)
-        self.actor_optimizer.zero_grad()
-        action_loss.backward()
-        self.actor_optimizer.step()
+
+        for epoch in range(100):
+            origin_action = self.actor(state)
+            action_loss = nn.MSELoss()(action, origin_action)
+            self.actor_optimizer.zero_grad()
+            action_loss.backward()
+            self.actor_optimizer.step()
+        # plt.plot(origin_action.detach().cpu().numpy())
+        # plt.plot(action.detach().cpu().numpy())
+        # plt.show()
+
         for target_param, param in zip(self.target_actor.parameters(), self.actor.parameters()):
             target_param.data.copy_(param.data)
-        # for i in range(len(next_state_node_list)):
-        #     next_state_node_list[i].state = next_state_node_list[i].next_state
-        #     next_state_node_list[i].get_ATP_limit()
-        #     next_state_node_list[i].get_action()
-        #     next_state_node_list[i].reshape_action()
-        #     next_state_node_list[i].get_acc()
-        #     if next_state_node_list[i].Shield_Check():
-        #         next_state_node_list[i].get_safe_action()
-        #     if origin_next_action[i] != next_state_node_list[i].action:
-        #         origin_next_action[i] = torch.from_numpy(next_state_node_list[i].action).to('cuda').clone()
-        new_origin_action = self.actor(state)
+
         policy_loss = self.critic(state, self.actor(state))
         policy_loss = -policy_loss.mean()
 
@@ -177,3 +171,22 @@ class DDPG:
                 target_param.data * (1.0 - self.soft_tau) +
                 param.data * self.soft_tau
             )
+
+    def approximate(self, node_list, length):
+        state_node_list = node_list[-int(length - 1):]
+        state_node_tuple = tuple(state_node.state for state_node in state_node_list)
+        action_state_node_tuple = tuple(state_node.action for state_node in state_node_list)
+        state = torch.FloatTensor(state_node_tuple).to(self.device)
+        action = torch.FloatTensor(action_state_node_tuple).to(self.device)
+        for epoch in range(50000):
+            origin_action = self.integrate_actor(state)
+            action_loss = nn.MSELoss()(action, origin_action)
+            self.integrate_optimizer.zero_grad()
+            action_loss.backward()
+            self.integrate_optimizer.step()
+        # plt.plot(origin_action.detach().cpu().numpy())
+        # plt.plot(action.detach().cpu().numpy())
+        # plt.show()
+        # for param, integrate_param in zip(self.actor.parameters(), self.integrate_actor.parameters()):
+        #     param.data.copy_(integrate_param.data)
+        print(action_loss)

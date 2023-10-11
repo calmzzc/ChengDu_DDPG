@@ -156,38 +156,19 @@ def plot_speed(total_v_list, total_t_list, total_a_list, total_acc_list, tag="tr
 
 def evalplot_speed(total_v_list, total_t_list, total_a_list, total_acc_list, limit_list, A_limit_list, tag="eval", env='Train Optimal', algo="DDPG", save=True,
                    path='./'):
-    # sns.set()
-    # plt.figure(dpi=150)
-    # plt.title(u"{}环境下{}算法的评价速度曲线".format(env, algo), fontproperties=chinese_font())
-    # ax1 = plt.axes(projection='3d')
-    # for i in range(len(total_v_list)):
-    #     if i % 6 == 0:
-    #         a = np.array(total_v_list[i]).reshape(-1)
-    #         b = np.array(total_t_list[i]).reshape(-1)
-    #         c = np.linspace(1, len(total_t_list[i]) * 40, len(total_t_list[i]))
-    #         ax1.plot3D(b, c, a)
-    # plt.legend((u'速度曲线',), loc="best", prop=chinese_font())
-    # if save:
-    #     plt.savefig(path + f"{tag}_speed_profile_cn")
+
     plt.figure(dpi=150)
     serise = Series(total_a_list[1])
     value = serise.values.reshape(len(serise), 1)
-    total_a_list[1] = MinMaxScaler(feature_range=(-1, 1)).fit_transform(value)
-    # index_list = np.linspace(0, len(total_a_list[1]) - 1, num=len(total_a_list[1]), endpoint=True)
-    # index_list = index_list * 40
-    # templist = total_a_list[1].reshape(-1)
-    # f = interp1d(index_list, templist)
-    # xnew = np.linspace(0, 4240, num=4241, endpoint=True)
-    # ynew = f(xnew)
-    # plt.plot(index_list, templist, 'o', xnew, ynew, '-')
-    plt.plot(total_acc_list[1])
+    # total_a_list[1] = MinMaxScaler(feature_range=(-1, 1)).fit_transform(value)
+    plt.plot(total_a_list[1])
     plt.legend((u'动作曲线',), loc='best', prop=chinese_font())
     if save:
         plt.savefig(path + f"{tag}_action_cn")
     plt.figure(dpi=150)
     serise2 = Series(total_acc_list[1])
     value2 = serise.values.reshape(len(serise2), 1)
-    total_acc_list[1] = MinMaxScaler(feature_range=(-1.2, 1.2)).fit_transform(value2)
+    # total_acc_list[1] = MinMaxScaler(feature_range=(-1.2, 1.2)).fit_transform(value2)
     plt.plot(total_acc_list[1])
     plt.legend((u'加速度曲线',), loc='best', prop=chinese_font())
     if save:

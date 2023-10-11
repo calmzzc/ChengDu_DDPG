@@ -1,45 +1,26 @@
-import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 
-sns.set()
+# 定义数据
+data1 = [1, 2, 3, 4, 5, 3, 4, 5]
+data2 = [2, 3, 4, 5, 6, 3, 4, 5]
+data3 = [5, 6, 7, 8, 9, 3, 4, 5]
 
+# 定义x轴标签
+x_labels = ['X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8']
+x_labels_subplot = [x_labels[i:i + 3] for i in range(0, len(x_labels), 3)]  # convert to list of lists with 3 elements each
 
-def smooth(data, sm=2):
-    smooth_data = []
-    if sm > 1:
-        for d in data:
-            y = np.ones(sm) * 1.0 / sm
-            d = np.convolve(y, d, "same")
+# 使用bar函数绘制柱状图，将每个x_label对应的三组data画成三个柱
+fig, axs = plt.subplots(len(x_labels_subplot), 1, figsize=(10, 30))  # create figure with multiple axes
 
-            smooth_data.append(d)
-    return smooth_data
+for i, ax in enumerate(axs):
+    ax.bar(x_labels_subplot[i], data1[i:i + 3], color='blue')  # plot the first dataset
+    ax.bar(x_labels_subplot[i], data2[i:i + 3], color='green')  # plot the second dataset
+    ax.bar(x_labels_subplot[i], data3[i:i + 3], color='red')  # plot the third dataset
 
+    ax.set_xticks(range(len(x_labels_subplot[i])))  # set x ticks according to the subplot labels
+    ax.set_xticklabels(x_labels_subplot[i])  # set x tick labels according to the subplot labels
 
-def get_data():
-    '''获取数据
-    '''
-    basecond = np.array([[18, 20, 19, 18, 13, 4, 1], [20, 17, 12, 9, 3, 0, 0], [20, 20, 20, 12, 5, 3, 0]])
-    cond1 = np.array([[18, 19, 18, 19, 20, 15, 14], [19, 20, 18, 16, 20, 15, 9], [19, 20, 20, 20, 17, 10, 0]])
-    # cond2 = np.array([[20, 20, 20, 20, 19, 17, 4], [20, 20, 20, 20, 20, 19, 7], [19, 20, 20, 19, 19, 15, 2]])
-    # cond3 = np.array([[20, 20, 20, 20, 19, 17, 12], [18, 20, 19, 18, 13, 4, 1], [20, 19, 18, 17, 13, 2, 0]])
-    # basecond = smooth(basecond)
-    # cond1 = smooth(cond1)
-    # return basecond, cond1, cond2, cond3
-    return basecond, cond1
-
-
-data = get_data()
-label = ['algo1', 'algo2', 'algo3', 'algo4']
-df = []
-for i in range(len(data)):
-    df.append(pd.DataFrame(data[i]).melt(var_name='episode', value_name='loss'))
-    df[i]['algo'] = label[i]
-
-df = pd.concat(df)  # 合并
-df.index = range(len(df))
-print(df)
-sns.lineplot(x="episode", y="loss", hue="algo", style="algo", data=df)
-plt.title("some loss")
+plt.ylabel('Y-axis label')
+plt.tight_layout()  # to avoid overlap between subplots
 plt.show()

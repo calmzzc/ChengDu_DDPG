@@ -16,6 +16,7 @@ from plot import plot_rewards_cn, plot_speed, evalplot_speed, plot_trainep_speed
 from line import Section, SectionS, SectionX
 from StateNode import StateNode
 from MctsStateNode import MctsStateNode
+import matplotlib.pyplot as plt
 
 # warnings.filterwarnings("ignore")
 
@@ -26,20 +27,22 @@ sys.path.append(parent_path)  # 添加父路径到系统路径sys.path
 curr_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")  # 获取当前时间
 
 
+# 0929目前还是会存在梯度消失或梯度爆炸的问题，加入正则化层为影响效果，需要看看怎么弄
+
 class DDPGConfig:
     def __init__(self):
         self.algo = 'DDPG_CD'  # 算法名称
-        self.env = "Section2"  # 环境名称
-        self.train_eps = 5000  # 训练的回合数
+        self.env = "Section16"  # 环境名称
+        self.train_eps = 600  # 训练的回合数
         self.max_step = 500  # 每回合最多步数
         self.eval_eps = 10  # 测试的回合数
         self.gamma = 0.99  # 折扣因子
         self.critic_lr = 1e-3  # 评论家网络的学习率
-        self.actor_lr = 1e-3  # 演员网络的学习率
+        self.actor_lr = 1e-5  # 演员网络的学习率
         self.memory_capacity = 8000
-        self.batch_size = 128
+        self.batch_size = 256
         self.target_update = 2
-        self.hidden_dim = 128
+        self.hidden_dim = 256
         self.update_every = 15
         self.shield = 0
         if self.shield:
@@ -62,7 +65,7 @@ def env_agent_config(cfg, seed=1):
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
 
-    state_dim = 4
+    state_dim = 3
     action_dim = 1
     agent = DDPG(state_dim, action_dim, cfg)
     # agent = DDPG_Shield(state_dim, action_dim, cfg, line)
@@ -92,13 +95,14 @@ def train(cfg, line, agent, train_model):
     total_t_power_list = []  # 总牵引能耗列表
     total_re_power_list = []  # 总再生能耗列表
     node_list = []  # 节点列表
+    largest_reward = -np.inf
     for i_ep in range(cfg.train_eps):
         total_ep_list.append(i_ep)
-        state = np.zeros(4)
+        state = np.zeros(3)
         state[0] = np.array(0).reshape(1)
         state[1] = np.array(0).reshape(1)
         state[2] = np.array(0).reshape(1)
-        state[3] = np.array(0).reshape(1)
+        # state[3] = np.array(0).reshape(1)
         # state[2] = np.array(0).reshape(1)
         ou_noise.reset()
         done = False
@@ -194,29 +198,42 @@ def train(cfg, line, agent, train_model):
                                                                                                                                                 ep_unsafe_counts,
                                                                                                                                                 0),
                                                                                                                                             state_node.step, np.round(ep_protect_counts, decimals=0)))
-        rewards.append(ep_reward)
-        unsafe_counts.append(ep_unsafe_counts)
-        protect_counts.append(ep_protect_counts)
-        if ma_unsafe_counts:
-            ma_unsafe_counts.append(0.9 * ma_unsafe_counts[-1] + 0.1 * ep_unsafe_counts)
-        else:
-            ma_unsafe_counts.append(ep_unsafe_counts)
-        if ma_protect_counts:
-            ma_protect_counts.append(0.9 * ma_protect_counts[-1] + 0.1 * ep_protect_counts)
-        else:
-            ma_protect_counts.append(ep_protect_counts)
-        total_power_list.append(total_power)
-        total_t_power_list.append(t_power)
-        total_re_power_list.append(re_power)
-        if ma_total_power_list:
-            ma_total_power_list.append(0.9 * ma_total_power_list[-1] + 0.1 * total_power)
-        else:
-            ma_total_power_list.append(total_power)
-        if ma_rewards:
-            ma_rewards.append(0.9 * ma_rewards[-1] + 0.1 * ep_reward)
-        else:
-            ma_rewards.append(ep_reward)
+        if i_ep > 100:
+            rewards.append(ep_reward)
+            unsafe_counts.append(ep_unsafe_counts)
+            protect_counts.append(ep_protect_counts)
+            if ma_unsafe_counts:
+                ma_unsafe_counts.append(0.9 * ma_unsafe_counts[-1] + 0.1 * ep_unsafe_counts)
+            else:
+                ma_unsafe_counts.append(ep_unsafe_counts)
+            if ma_protect_counts:
+                ma_protect_counts.append(0.9 * ma_protect_counts[-1] + 0.1 * ep_protect_counts)
+            else:
+                ma_protect_counts.append(ep_protect_counts)
+            total_power_list.append(total_power)
+            total_t_power_list.append(t_power)
+            total_re_power_list.append(re_power)
+            if ma_total_power_list:
+                ma_total_power_list.append(0.9 * ma_total_power_list[-1] + 0.1 * total_power)
+            else:
+                ma_total_power_list.append(total_power)
+            if ma_rewards:
+                ma_rewards.append(0.9 * ma_rewards[-1] + 0.1 * ep_reward)
+            else:
+                ma_rewards.append(ep_reward)
+        if i_ep > cfg.train_eps * 2 / 3:
+            if ep_reward > largest_reward:
+                largest_reward = ep_reward
+                # agent.approximate(node_list, (line.length / line.delta_distance))
+                # agent.save_int(path=cfg.model_path)
+                agent.save(path=cfg.model_path)
+        # if i_ep > cfg.train_eps * 1 / 3:
+        #     values = rewards[rewards.index(ep_reward) - 10:rewards.index(ep_reward)]
+        #     average_value = sum(values) / len(values)
+        #     if rewards[-1] > average_value:
+        #         agent.approximate(node_list, (line.length / line.delta_distance))
     print('完成训练！')
+    plt.plot(ma_protect_counts)
     return rewards, ma_rewards, total_v_list, total_t_list, total_a_list, total_ep_list, total_power_list, ma_total_power_list, unsafe_counts, ma_unsafe_counts, total_acc_list, total_t_power_list, total_re_power_list, limit_list, A_limit_list, slope_list
 
 
@@ -240,11 +257,11 @@ def eval(cfg, line, agent, train_model):
     node_list = []  # 节点列表
     for i_ep in range(cfg.eval_eps):
         total_ep_list.append(i_ep)
-        state = np.zeros(4)
+        state = np.zeros(3)
         state[0] = np.array(0).reshape(1)
         state[1] = np.array(0).reshape(1)
         state[2] = np.array(0).reshape(1)
-        state[3] = np.array(0).reshape(1)
+        # state[3] = np.array(0).reshape(1)
         # state[2] = np.array(0).reshape(1)
         ou_noise.reset()
         done = False
@@ -342,19 +359,20 @@ def eval(cfg, line, agent, train_model):
 
 if __name__ == "__main__":
     cfg = DDPGConfig()
-    line, agent, train_model = env_agent_config(cfg, seed=3)
+    make_dir(cfg.result_path, cfg.model_path, cfg.data_path)
+    line, agent, train_model = env_agent_config(cfg, seed=9)
     train_time_start = time.time()
     t_rewards, t_ma_rewards, v_list, t_list, a_list, ep_list, power_list, ma_power_list, unsafe_c, ma_unsafe_c, acc_list, total_t_power_list, total_re_power_list, limit_list, A_limit_list, slope_list = train(
         cfg, line, agent, train_model)
     train_time_end = time.time()
     train_time = train_time_end - train_time_start
-    make_dir(cfg.result_path, cfg.model_path, cfg.data_path)
-    agent.save(path=cfg.model_path)
+    # agent.save(path=cfg.model_path)
     save_results(t_rewards, t_ma_rewards, tag='train', path=cfg.result_path)
 
     # 测试
-    line, agent, train_mdoel = env_agent_config(cfg, seed=3)
+    line, agent, train_mdoel = env_agent_config(cfg, seed=9)
     agent.load(path=cfg.model_path)
+    # agent.load_int(path=cfg.model_path)
     eval_time_start = time.time()
     rewards, ma_rewards, ev_list, et_list, ea_list, eval_ep_list, eacc_list, cal_list = eval(cfg, line, agent,
                                                                                              train_model)
