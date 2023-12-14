@@ -14,21 +14,21 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from model import Actor, Critic
+from model import D2Actor, D2Critic
 from memory import ReplayBuffer
 import multiprocessing
 import matplotlib.pyplot as plt
 
 
-class DDPG:
+class D2DDPG:
     def __init__(self, state_dim, action_dim, cfg):
         self.device = cfg.device
-        self.critic = Critic(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
-        self.actor = Actor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
-        self.target_critic = Critic(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
-        self.target_actor = Actor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
+        self.critic = D2Critic(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
+        self.actor = D2Actor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
+        self.target_critic = D2Critic(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
+        self.target_actor = D2Actor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
 
-        self.integrate_actor = Actor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
+        self.integrate_actor = D2Actor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
 
         # 复制参数到目标网络
         for target_param, param in zip(self.target_critic.parameters(), self.critic.parameters()):
@@ -105,7 +105,7 @@ class DDPG:
         self.actor.load_state_dict(torch.load(path + 'checkpoint.pt'))
 
     def load_int(self, path):
-        self.integrate_actor.load_state_dict(torch.load(path + 'int_checkpoint.pt'))
+        self.actor.load_state_dict(torch.load(path + 'int_checkpoint.pt'))
 
     def load_abl_int(self, path):
         self.actor.load_state_dict(torch.load(path + 'sec8_int_checkpoint.pt'))

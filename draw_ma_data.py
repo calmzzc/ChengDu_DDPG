@@ -2,6 +2,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.font_manager import FontProperties
+
+
+def label_font():
+    return FontProperties(fname=r"C:\Windows\Fonts\times.ttf", size=15)  # 系统字体路径，此处是mac的
 
 
 # pd.read_excel('test_data.xlsx', sheet_name='Sheet1', usecols='A,DA', nrows=11, header=2, index_col=0, engine='openpyxl')
@@ -17,7 +22,7 @@ def smooth(data, sm=2):
 
 
 def get_data():
-    df = pd.read_excel('rewards/ma_rewards_sec16.xlsx')
+    df = pd.read_excel('processed_rewards/ma_rewards_sec4.xlsx')
     a = df.values[:, 0]
     b = df.values[:, 1]
     c = df.values[:, 2]
@@ -27,6 +32,15 @@ def get_data():
     g = df.values[:, 6]
     h = df.values[:, 7]
     i = df.values[:, 8]
+    j = df.values[:, 9]
+    k = df.values[:, 10]
+    l = df.values[:, 11]
+    m = df.values[:, 12]
+    n = df.values[:, 13]
+    o = df.values[:, 14]
+    p = df.values[:, 15]
+    q = df.values[:, 16]
+    r = df.values[:, 17]
     # j = df.values[:, 9]
     # print(a)
     # print(b)
@@ -36,7 +50,10 @@ def get_data():
     test2 = np.array([d, e, f])
     # test2 = smooth(test2, 3)
     test3 = np.array([g, h, i])
-    return test1, test2, test3
+    test4 = np.array([j, k, l])
+    test5 = np.array([m, n, o])
+    test6 = np.array([p, q, r])
+    return test1, test2, test3, test4, test5, test6
 
 
 #
@@ -63,7 +80,8 @@ def get_data():
 
 
 data = get_data()
-label = ['Gov-DDPG', 'MCTS-DDPG', 'DDPG']
+# font = {'family': 'Times New Roman'}
+label = ['SSA-SAC', 'Shield-SAC', 'SAC', 'SSA-DDPG', 'Shield-DDPG', 'DDPG']
 df2 = []
 for i in range(len(data)):
     df2.append(pd.DataFrame(data[i]).melt(var_name='Episode', value_name='Reward'))
@@ -73,9 +91,12 @@ df2 = pd.concat(df2)  # 合并
 df2.index = range(len(df2))
 # print(df2)
 fig = plt.figure(dpi=150)
-fig.subplots_adjust(left=0.14, right=0.94, top=0.94, bottom=0.1)  # 设置子图与四个边的间距
-sns.lineplot(x="Episode", y="Reward", hue="Algo", style="Algo", data=df2, legend=False)
-plt.legend(labels=['Gov-DDPG', 'MCTS-DDPG', 'DDPG'], loc='lower right')
+fig.subplots_adjust(left=0.16, right=0.94, top=0.94, bottom=0.1)  # 设置子图与四个边的间距
+ax=sns.lineplot(x="Episode", y="Reward", hue="Algo", style="Algo", data=df2, legend=False)
+# ax.set_yticklabels(['{:,.2e}'.format(tick) for tick in ax.get_yticks()])
+# ax.set_xticklabels(ax.get_xticks(), fontfamily='Times New Roman')
+# ax.set_yticklabels(ax.get_yticks(), fontfamily='Times New Roman')
+plt.legend(labels=['SSA-SAC', 'Shield-SAC', 'SAC', 'SSA-DDPG', 'Shield-DDPG', 'DDPG'], loc='lower right')
 # plt.title("some loss")
 plt.show()
 

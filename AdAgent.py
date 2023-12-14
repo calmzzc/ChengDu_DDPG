@@ -14,21 +14,28 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from model import Actor, Critic
+from model import AdActor, AdCritic, DepAdActor
 from memory import ReplayBuffer
 import multiprocessing
 import matplotlib.pyplot as plt
 
 
-class DDPG:
+# 测试神经元数量时原始网络和AdActor可以用相同的结构
+# 测试神经网络深度时AdActor要和原始神经网络结构不一样
+
+
+class AdDDPG:
     def __init__(self, state_dim, action_dim, cfg):
         self.device = cfg.device
-        self.critic = Critic(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
-        self.actor = Actor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
-        self.target_critic = Critic(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
-        self.target_actor = Actor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
+        self.critic = AdCritic(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
+        self.actor = AdActor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
+        self.target_critic = AdCritic(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
+        self.target_actor = AdActor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
 
-        self.integrate_actor = Actor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
+        # 测试神经元数量影响用这个
+        # self.integrate_actor = AdActor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
+        # 测试神经网络深度影响用这个
+        self.integrate_actor = DepAdActor(state_dim, action_dim, cfg.hidden_dim).to(cfg.device)
 
         # 复制参数到目标网络
         for target_param, param in zip(self.target_critic.parameters(), self.critic.parameters()):

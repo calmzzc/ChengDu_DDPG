@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import torch
 import time
@@ -365,6 +367,7 @@ class MctsStateNode:
     def Mcts_State_Transition_eval(self):
         self.get_ATP_limit()
         self.get_action()
+        # self.get_action_abl()
         # self.action = self.agent.eval_choose_action(self.state)
         # self.action = np.array(self.action).reshape(1)
         self.reshape_action_main()
@@ -380,6 +383,33 @@ class MctsStateNode:
             self.get_acc()
         self.get_next_state()
         self.get_power()
+
+    def Mcts_State_Transition_eval_rob(self, noise_dict, noise_acc_dict, i, j):
+        self.get_ATP_limit()
+        self.get_action()
+        self.reshape_action_main()
+        self.get_acc()
+        if self.Mcts_Check() and self.step < self.max_step:
+            # self.get_safe_action()
+            temp_action = self.Mcts_Start()
+            if temp_action is not None:
+                self.action = temp_action
+            else:
+                self.get_safe_action()
+            self.reshape_action_main()
+            self.get_acc()
+        random_ind = random.random()
+        if random_ind <= 0.01 * i:
+            o_t_action = self.action.copy()
+            o_t_acc = self.acc.copy()
+            noise_dict[self.step] = o_t_action
+            noise_acc_dict[self.step] = o_t_acc
+            random_noise = random.uniform(-0.01 * j, 0.01 * j)
+            self.action = self.action + random_noise
+            self.get_acc()
+        self.get_next_state()
+        self.get_power()
+        return noise_dict, noise_acc_dict
 
     # 后面的是一般的方法
 
@@ -403,9 +433,12 @@ class MctsStateNode:
             else:
                 self.action = np.array(np.random.uniform(-1, 1)).reshape(1)
         else:
-            self.action = self.agent.choose_action(self.state)
+            self.action = self.agent.eval_choose_action(self.state)
             self.action = np.array(self.action).reshape(1)
         self.action = np.round(self.action, 2)
+
+    def get_action_abl(self):
+        self.action = np.array(1).reshape(1)
 
     def get_ATP_limit(self):  # 在计算ATP这里加一个-2看看效果怎么样
         key_list = []
@@ -563,7 +596,7 @@ class MctsStateNode:
 
     # 下面是舒适度检查过程
     def comfort_check(self):
-        if abs(self.action - self.last_node_action) >= 0.3:
+        if abs(self.acc - self.last_node_acc) >= 0.3:
             self.comfort_punish = 1.5  # 不舒适
         else:
             self.comfort_punish = 0
